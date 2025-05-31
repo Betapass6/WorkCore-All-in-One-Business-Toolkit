@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  name      String
+  role      Role       @default(USER)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  products  Product[]
+  bookings  Booking[]
+  feedbacks Feedback[]
+  files     File[]
+}
+
+model Product {
+  id          String     @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  stock       Int
+  category    String
+  supplierId  String
+  supplier    Supplier   @relation(fields: [supplierId], references: [id])
+  userId      String
+  user        User       @relation(fields: [userId], references: [id])
+  feedbacks   Feedback[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+model Supplier {
+  id        String    @id @default(uuid())
+  name      String
+  contact   String
+  address   String
+  products  Product[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Service {
+  id          String    @id @default(uuid())
+  name        String
+  description String
+  price       Float
+  duration    Int
+  bookings    Booking[]
+  feedbacks   Feedback[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Booking {
+  id        String   @id @default(uuid())
+  date      DateTime
+  time      String
+  status    Status   @default(PENDING)
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Feedback {
+  id        String   @id @default(uuid())
+  title     String?  @default("")
+  content   String
+  rating    Int
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model File {
+  id          String   @id @default(uuid())
+  fileName    String
+  uuid        String   @unique
+  size        Int
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  expiredAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  USER
+}
+
+enum Status {
+  PENDING
+  CONFIRMED
+  CANCELLED
+} 
