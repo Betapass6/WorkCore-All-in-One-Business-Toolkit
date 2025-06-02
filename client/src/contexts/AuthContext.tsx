@@ -1,60 +1,67 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { authService } from '../services/auth.service'
-import { User } from '../types'
+import authService from '../services/auth.service'
+
+interface User {
+  id: string
+  name: string
+  email: string
+  role: 'ADMIN' | 'STAFF' | 'USER'
+}
 
 interface AuthContextType {
   user: User | null
-  token: string | null
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
+  isAdmin: boolean
+  isStaff: boolean
+  login: (data: { email: string; password: string }) => Promise<void>
   logout: () => void
+  loading: boolean
+  token: string | null
 }
 
-export const AuthContext = createContext<AuthContextType | null>(null)
+export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(null)
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(authService.getCurrentUser())
+  const [token, setToken] = useState<string | null>(authService.getToken())
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('token')
-    if (storedToken) {
-      setToken(storedToken)
-      authService.getCurrentUser().then(setUser)
-    }
+    // No need to fetch user/token here, it's initialized from localStorage
+    // This effect can be used for other side effects if needed
   }, [])
 
-  const login = async (email: string, password: string) => {
-    // Temporary mock login
-    const mockUser = {
-      id: '1',
-      name: 'Admin User',
-      email: email,
-      role: 'admin' as const
-    }
-    const mockToken = 'mock-jwt-token'
-    
-    setToken(mockToken)
-    setUser(mockUser)
-    localStorage.setItem('token', mockToken)
+  const login = async (data: { email: string; password: string }) => {
+    const response = await authService.login(data)
+    setUser(response.user)
+    setToken(response.token)
   }
 
   const logout = () => {
-    setToken(null)
+    authService.logout()
     setUser(null)
-    localStorage.removeItem('token')
+    setToken(null)
   }
 
-  const isAuthenticated = !!token
+  const value = {
+    user,
+    isAuthenticated: !!user,
+    isAdmin: user?.role === 'ADMIN',
+    isStaff: user?.role === 'STAFF',
+    login,
+    logout,
+    loading,
+    token,
+  }
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext)
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider')

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -9,104 +9,202 @@ import {
   Th,
   Td,
   useDisclosure,
-  Alert,
-  AlertIcon,
+  FormControl,
+  FormLabel,
+  Input,
+  Select,
+  useToast,
+  HStack,
+  IconButton,
+  Text,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
   Spinner,
+  Flex,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
   ModalBody,
   ModalCloseButton,
-} from '@chakra-ui/react'
-import { FiPlus } from 'react-icons/fi'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import MainLayout from '../layouts/MainLayout'
-import { FormField } from '../components/ui/Form'
-import { useProductStore } from '../store/product.store'
-import { productService } from '../services/productService'
-import { Product } from '../types'
+} from '@chakra-ui/react';
+import { EditIcon, DeleteIcon, SearchIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import productService, { Product, CreateProductData } from '../services/product.service';
 
-const productSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  category: z.string().min(1, 'Category is required'),
-  price: z.number().min(0, 'Price must be positive'),
-  stock: z.number().min(0, 'Stock must be positive'),
-  supplierId: z.string().min(1, 'Supplier is required'),
-})
-
-type ProductForm = z.infer<typeof productSchema>
-
-export function Products() {
-  const [products, setProducts] = useState<Product[]>([])
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const { loading, error, fetchProducts, addProduct, deleteProduct } = useProductStore()
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<ProductForm>({
-    resolver: zodResolver(productSchema),
-  })
+export default function Products() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [formData, setFormData] = useState<CreateProductData>({
+    name: '',
+    description: '',
+    price: 0,
+    stock: 0,
+    category: '',
+    supplierId: '',
+  });
+  const [editMode, setEditMode] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const toast = useToast();
+  const cancelRef = useRef(null);
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
-    loadProducts()
-  }, [])
+    loadProducts();
+    loadSuppliers();
+  }, [page, search]);
 
   const loadProducts = async () => {
+    setLoading(true);
     try {
-      const data = await productService.getAll()
-      setProducts(data)
+      const data = await productService.getProducts({ search, page, limit: PAGE_SIZE });
+      setProducts(data.items || data); // support both paginated and non-paginated
+      setTotalPages(data.totalPages || 1);
     } catch (error) {
-      console.error('Error loading products:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to load products',
+        status: 'error',
+        duration: 3000,
+      });
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
-  const onSubmit = async (data: ProductForm) => {
-    await addProduct(data)
-    onClose()
-    reset()
-  }
+  const loadSuppliers = async () => {
+    try {
+      const data = await productService.getSuppliers();
+      setSuppliers(data);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load suppliers',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
 
-  if (loading) {
-    return (
-      <MainLayout>
-        <Box display="flex" justifyContent="center" alignItems="center" h="200px">
-          <Spinner size="xl" />
-        </Box>
-      </MainLayout>
-    )
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editMode && editId) {
+        await productService.updateProduct(editId, formData);
+        toast({
+          title: 'Success',
+          description: 'Product updated successfully',
+          status: 'success',
+          duration: 3000,
+        });
+      } else {
+        await productService.createProduct(formData);
+        toast({
+          title: 'Success',
+          description: 'Product created successfully',
+          status: 'success',
+          duration: 3000,
+        });
+      }
+      onClose();
+      setEditMode(false);
+      setEditId(null);
+      loadProducts();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save product',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
 
-  if (error) {
-    return (
-      <MainLayout>
-        <Alert status="error">
-          <AlertIcon />
-          {error}
-        </Alert>
-      </MainLayout>
-    )
-  }
+  const handleEdit = (product: Product) => {
+    setFormData({
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      stock: product.stock,
+      category: product.category,
+      supplierId: product.supplierId,
+    });
+    setEditMode(true);
+    setEditId(product.id);
+    onOpen();
+  };
+
+  const handleDelete = (id: string) => {
+    setDeleteId(id);
+    setIsDeleteOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+    try {
+      await productService.deleteProduct(deleteId);
+      toast({
+        title: 'Deleted',
+        description: 'Product deleted successfully',
+        status: 'success',
+        duration: 3000,
+      });
+      setIsDeleteOpen(false);
+      setDeleteId(null);
+      loadProducts();
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete product',
+        status: 'error',
+        duration: 3000,
+      });
+    }
+  };
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPage(1);
+    loadProducts();
+  };
 
   return (
-    <MainLayout>
-      <Box>
-        <Button
-          leftIcon={<FiPlus />}
-          colorScheme="brand"
-          mb={6}
-          onClick={onOpen}
-        >
+    <Box p={5}>
+      <HStack mb={4} spacing={4}>
+        <Button colorScheme="blue" onClick={() => { setEditMode(false); setFormData({ name: '', description: '', price: 0, stock: 0, category: '', supplierId: '' }); onOpen(); }}>
           Add Product
         </Button>
+        <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center' }}>
+          <Input
+            placeholder="Search products..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            mr={2}
+          />
+          <IconButton aria-label="Search" icon={<SearchIcon />} type="submit" />
+        </form>
+      </HStack>
 
-        <Box bg="white" borderRadius="lg" boxShadow="sm" overflow="hidden">
-          <Table>
+      {loading ? <Spinner /> : (
+        <>
+          <Table variant="simple">
             <Thead>
               <Tr>
                 <Th>Name</Th>
                 <Th>Category</Th>
                 <Th>Price</Th>
                 <Th>Stock</Th>
+                <Th>Supplier</Th>
                 <Th>Actions</Th>
               </Tr>
             </Thead>
@@ -117,73 +215,147 @@ export function Products() {
                   <Td>{product.category}</Td>
                   <Td>${product.price}</Td>
                   <Td>{product.stock}</Td>
+                  <Td>{suppliers.find(s => s.id === product.supplierId)?.name}</Td>
                   <Td>
-                    <Button
-                      size="sm"
-                      colorScheme="red"
-                      onClick={() => deleteProduct(product.id)}
-                    >
-                      Delete
-                    </Button>
+                    <HStack spacing={2}>
+                      <IconButton
+                        aria-label="Edit product"
+                        icon={<EditIcon />}
+                        size="sm"
+                        onClick={() => handleEdit(product)}
+                      />
+                      <IconButton
+                        aria-label="Delete product"
+                        icon={<DeleteIcon />}
+                        size="sm"
+                        colorScheme="red"
+                        onClick={() => handleDelete(product.id)}
+                      />
+                    </HStack>
                   </Td>
                 </Tr>
               ))}
             </Tbody>
           </Table>
-        </Box>
 
-        <Modal isOpen={isOpen} onClose={onClose}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>Add New Product</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              <Box as="form" onSubmit={handleSubmit(onSubmit)}>
-                <FormField
-                  label="Name"
-                  name="name"
-                  register={register}
-                  errors={errors}
+          <Flex justify="space-between" align="center" mt={4}>
+            <Text>
+              Page {page} of {totalPages}
+            </Text>
+            <HStack>
+              <IconButton
+                aria-label="Previous page"
+                icon={<ChevronLeftIcon />}
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                isDisabled={page === 1}
+              />
+              <IconButton
+                aria-label="Next page"
+                icon={<ChevronRightIcon />}
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                isDisabled={page === totalPages}
+              />
+            </HStack>
+          </Flex>
+        </>
+      )}
+
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{editMode ? 'Edit Product' : 'Add Product'}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <form onSubmit={handleSubmit}>
+              <FormControl mb={4}>
+                <FormLabel>Name</FormLabel>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
                 />
-                <FormField
-                  label="Category"
-                  name="category"
-                  register={register}
-                  errors={errors}
+              </FormControl>
+              <FormControl mb={4}>
+                <FormLabel>Description</FormLabel>
+                <Input
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
                 />
-                <FormField
-                  label="Price"
-                  name="price"
+              </FormControl>
+              <FormControl mb={4}>
+                <FormLabel>Price</FormLabel>
+                <Input
                   type="number"
-                  register={register}
-                  errors={errors}
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                  required
                 />
-                <FormField
-                  label="Stock"
-                  name="stock"
+              </FormControl>
+              <FormControl mb={4}>
+                <FormLabel>Stock</FormLabel>
+                <Input
                   type="number"
-                  register={register}
-                  errors={errors}
+                  value={formData.stock}
+                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                  required
                 />
-                <FormField
-                  label="Supplier"
-                  name="supplierId"
-                  type="select"
-                  register={register}
-                  errors={errors}
-                  options={[
-                    { value: '1', label: 'Supplier 1' },
-                    { value: '2', label: 'Supplier 2' },
-                  ]}
+              </FormControl>
+              <FormControl mb={4}>
+                <FormLabel>Category</FormLabel>
+                <Input
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  required
                 />
-                <Button colorScheme="brand" type="submit">
-                  Save
-                </Button>
-              </Box>
-            </ModalBody>
-          </ModalContent>
-        </Modal>
-      </Box>
-    </MainLayout>
-  )
+              </FormControl>
+              <FormControl mb={4}>
+                <FormLabel>Supplier</FormLabel>
+                <Select
+                  value={formData.supplierId}
+                  onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+                  required
+                >
+                  <option value="">Select a supplier</option>
+                  {suppliers.map((supplier) => (
+                    <option key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+              <Button type="submit" colorScheme="blue" mr={3}>
+                {editMode ? 'Update' : 'Create'}
+              </Button>
+              <Button onClick={onClose}>Cancel</Button>
+            </form>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      <AlertDialog
+        isOpen={isDeleteOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setIsDeleteOpen(false)}
+      >
+        <AlertDialogOverlay />
+        <AlertDialogContent>
+          <AlertDialogHeader fontSize="lg" fontWeight="bold">
+            Delete Product
+          </AlertDialogHeader>
+          <AlertDialogBody>
+            Are you sure you want to delete this product? This action cannot be undone.
+          </AlertDialogBody>
+          <AlertDialogFooter>
+            <Button ref={cancelRef} onClick={() => setIsDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button colorScheme="red" onClick={confirmDelete} ml={3}>
+              Delete
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </Box>
+  );
 } 

@@ -1,4 +1,4 @@
-import React from 'react'
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -20,10 +20,10 @@ import {
   ModalHeader,
   ModalBody,
   ModalCloseButton,
+  Box,
+  useToast,
 } from '@chakra-ui/react'
-import { serviceService } from '../services/service.service'
-import { useToast } from '@chakra-ui/react'
-import { Service } from '../types'
+import serviceService from '../services/service.service'
 
 const serviceSchema = z.object({
   name: z.string().min(1),
@@ -38,7 +38,7 @@ interface ServiceFormProps {
   isOpen: boolean
   onClose: () => void
   onSuccess?: () => void
-  initialData?: Service
+  initialData?: ServiceFormData & { id?: string }
 }
 
 export function ServiceForm({ isOpen, onClose, onSuccess, initialData }: ServiceFormProps) {
@@ -47,13 +47,15 @@ export function ServiceForm({ isOpen, onClose, onSuccess, initialData }: Service
     resolver: zodResolver(serviceSchema),
     defaultValues: initialData,
   })
+  const [loading, setLoading] = useState(false)
 
   const onSubmit = async (data: ServiceFormData) => {
+    setLoading(true)
     try {
-      if (initialData) {
-        await serviceService.update(initialData.id, data)
+      if (initialData?.id) {
+        await serviceService.updateService(initialData.id, data)
       } else {
-        await serviceService.create(data)
+        await serviceService.createService(data)
       }
       toast({
         title: `Service ${initialData ? 'updated' : 'created'} successfully`,
@@ -70,6 +72,8 @@ export function ServiceForm({ isOpen, onClose, onSuccess, initialData }: Service
         duration: 5000,
         isClosable: true,
       })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -80,7 +84,7 @@ export function ServiceForm({ isOpen, onClose, onSuccess, initialData }: Service
         <ModalHeader>{initialData ? 'Edit Service' : 'Add Service'}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <Box as="form" onSubmit={handleSubmit(onSubmit)}>
             <VStack spacing={4}>
               <FormControl isInvalid={!!errors.name}>
                 <FormLabel>Name</FormLabel>
@@ -114,11 +118,16 @@ export function ServiceForm({ isOpen, onClose, onSuccess, initialData }: Service
                 </NumberInput>
               </FormControl>
 
-              <Button type="submit" colorScheme="blue" width="full">
+              <Button
+                type="submit"
+                colorScheme="blue"
+                isLoading={loading}
+                width="full"
+              >
                 {initialData ? 'Update Service' : 'Create Service'}
               </Button>
             </VStack>
-          </form>
+          </Box>
         </ModalBody>
       </ModalContent>
     </Modal>

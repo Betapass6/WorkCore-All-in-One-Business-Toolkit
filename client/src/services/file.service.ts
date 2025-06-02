@@ -2,40 +2,42 @@ import api from './api'
 
 export interface File {
   id: string
-  name: string
-  size: number
-  type: string
-  url: string
-  uploadDate: string
-  downloads: number
-  expiresAt: string
+  fileName: string
+  uuid: string
+  expiredAt: string
+  downloadCount: number
+  userId: string
+  user: {
+    id: string
+    name: string
+  }
 }
 
-export const fileService = {
-  async upload(file: File) {
+const fileService = {
+  async uploadFile(file: Blob, fileName: string) {
     const formData = new FormData()
-    formData.append('file', file)
-    const { data } = await api.post<File>('/files/upload', formData, {
+    formData.append('file', file, fileName)
+    
+    const response = await api.post('/files/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     })
-    return data
+    return response.data
   },
 
-  async getAll() {
-    const { data } = await api.get<File[]>('/files')
-    return data
+  async getFiles(params?: { page?: number; limit?: number }) {
+    const response = await api.get('/files', { params })
+    return response.data
   },
 
-  async delete(id: string) {
+  async deleteFile(id: string) {
     await api.delete(`/files/${id}`)
   },
 
-  async download(id: string) {
-    const { data } = await api.get(`/files/${id}/download`, {
-      responseType: 'blob',
-    })
-    return data
+  getDownloadUrl(uuid: string) {
+    return `${api.defaults.baseURL}/files/${uuid}`
   }
-} 
+}
+
+export default fileService 

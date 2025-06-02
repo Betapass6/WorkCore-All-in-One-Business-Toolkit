@@ -3,29 +3,55 @@ import api from './api'
 export interface Product {
   id: string
   name: string
-  category: string
+  description: string
   price: number
   stock: number
+  category: string
+  supplierId: string
+  supplier: {
+    id: string
+    name: string
+  }
+}
+
+export interface CreateProductData {
+  name: string
+  description: string
+  price: number
+  stock: number
+  category: string
   supplierId: string
 }
 
-export const productService = {
-  async getAll() {
-    const { data } = await api.get<Product[]>('/products')
-    return data
+const productService = {
+  async getProducts(params?: { search?: string; page?: number; limit?: number }) {
+    const response = await api.get('/products', { params })
+    return response.data
   },
 
-  async create(product: Omit<Product, 'id'>) {
-    const { data } = await api.post<Product>('/products', product)
-    return data
+  async getProduct(id: string) {
+    const response = await api.get(`/products/${id}`)
+    return response.data
   },
 
-  async update(id: string, product: Partial<Product>) {
-    const { data } = await api.put<Product>(`/products/${id}`, product)
-    return data
+  async createProduct(data: CreateProductData) {
+    const response = await api.post('/products', data)
+    return response.data
   },
 
-  async delete(id: string) {
+  async updateProduct(id: string, data: Partial<CreateProductData>) {
+    const response = await api.put(`/products/${id}`, data)
+    return response.data
+  },
+
+  async deleteProduct(id: string) {
     await api.delete(`/products/${id}`)
+  },
+
+  async getSuppliers() {
+    const response = await api.get('/suppliers')
+    return response.data
   }
-} 
+}
+
+export default productService 

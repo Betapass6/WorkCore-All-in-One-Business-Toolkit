@@ -1,46 +1,29 @@
-import React from 'react'
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  Text,
-} from '@chakra-ui/react'
-import { Link as RouterLink, useLocation } from 'react-router-dom'
-import { FiChevronRight } from 'react-icons/fi'
-
-interface BreadcrumbItem {
-  label: string
-  path?: string
-}
+import { Box, Breadcrumb as ChakraBreadcrumb, BreadcrumbItem, BreadcrumbLink } from '@chakra-ui/react'
+import { Link } from 'react-router-dom'
 
 interface BreadcrumbProps {
-  items: BreadcrumbItem[]
+  items: {
+    label: string
+    href?: string
+  }[]
 }
 
-export function BreadcrumbNav({ items }: BreadcrumbProps) {
-  const location = useLocation()
-
+export function Breadcrumb({ items }: BreadcrumbProps) {
   return (
-    <Breadcrumb
-      spacing="8px"
-      separator={<FiChevronRight color="gray.500" />}
-      mb={6}
-    >
-      {items.map((item, index) => (
-        <BreadcrumbItem key={index}>
-          {item.path ? (
-            <BreadcrumbLink
-              as={RouterLink}
-              to={item.path}
-              color={location.pathname === item.path ? 'brand.500' : 'gray.500'}
-            >
-              {item.label}
-            </BreadcrumbLink>
-          ) : (
-            <Text color="gray.500">{item.label}</Text>
-          )}
-        </BreadcrumbItem>
-      ))}
-    </Breadcrumb>
+    <Box mb={4}>
+      <ChakraBreadcrumb>
+        {items.map((item, index) => (
+          <BreadcrumbItem key={index}>
+            {item.href ? (
+              <BreadcrumbLink as={Link} to={item.href}>
+                {item.label}
+              </BreadcrumbLink>
+            ) : (
+              <BreadcrumbLink>{item.label}</BreadcrumbLink>
+            )}
+          </BreadcrumbItem>
+        ))}
+      </ChakraBreadcrumb>
+    </Box>
   )
 } 

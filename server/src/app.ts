@@ -1,14 +1,14 @@
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { authRouter } from './routes/auth.routes';
 import { productRouter } from './routes/product.routes';
 import { bookingRouter } from './routes/booking.routes';
 import { feedbackRouter } from './routes/feedback.routes';
-import { fileRouter } from './routes/file.routes';
+import fileRouter from './routes/file.routes';
 import { supplierRouter } from './routes/supplier.routes';
-import { adminRouter } from './routes/admin.routes';
-import { serviceRouter } from './routes/service.routes';
+import adminRouter from './routes/admin.routes';
+import serviceRouter from './routes/service.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { authMiddleware } from './middleware/auth.middleware';
 import { requireRole } from './middleware/role.middleware';
@@ -17,6 +17,8 @@ import swaggerUi from 'swagger-ui-express';
 import { specs } from './utils/swagger';
 import { requestLogger } from './middleware/logger.middleware';
 import { apiLimiter } from './middleware/rate-limit.middleware';
+import { authenticate } from './middleware/auth.middleware';
+import morgan from 'morgan';
 
 dotenv.config();
 
@@ -27,6 +29,13 @@ app.use(cors());
 app.use(express.json());
 app.use(requestLogger);
 app.use(apiLimiter);
+app.use(morgan('dev'));
+
+// Custom logging middleware before public routes
+app.use((req: Request, res: Response, next: NextFunction) => {
+  console.log('Request received at middleware before public routes:', req.method, req.path);
+  next();
+});
 
 // Public Routes (no auth required)
 app.use('/api/auth', authRouter);

@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 declare global {
   namespace Express {
     interface Request {
-      user?: { id: string; role: Role };
+      user?: { userId: string; role: string };
     }
   }
 }
@@ -31,7 +31,7 @@ router.post(
 
     try {
       const { serviceId, date, time } = req.body;
-      const userId = req.user!.id; // Get user ID from auth middleware
+      const userId = req.user!.userId; // Get user ID from auth middleware
 
       // Basic availability check (needs refinement)
       const existingBooking = await prisma.booking.findFirst({
@@ -119,7 +119,7 @@ router.put(
 // Get bookings for the logged-in user (Client, Staff, Admin can view their own) - Requires authentication
 router.get('/my-bookings', async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = req.user!.userId;
     const bookings = await prisma.booking.findMany({
       where: { userId },
       include: { service: true },

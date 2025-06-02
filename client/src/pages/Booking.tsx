@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   Box,
   Heading,
@@ -10,19 +10,39 @@ import {
   Td,
   Badge,
   Select,
+  Button,
+  FormControl,
+  FormLabel,
+  Input,
+  VStack,
+  useToast,
 } from '@chakra-ui/react'
 import { useFetch } from '../hooks/useFetch'
 import { Booking } from '../types'
-import { bookingService } from '../services/bookingService'
-import { useToast } from '@chakra-ui/react'
+import bookingService from '../services/booking.service'
+import { useAuth } from '../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 
 export function BookingPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const toast = useToast()
   const { data: bookings, loading } = useFetch<Booking[]>({ url: '/booking' })
+  const [loadingForm, setLoadingForm] = useState(false)
+  const [formData, setFormData] = useState({
+    serviceId: '',
+    date: '',
+    time: '',
+  })
+
+  if (!user) {
+    navigate('/login')
+    return null
+  }
 
   const handleStatusChange = async (id: string, status: Booking['status']) => {
     try {
-      await bookingService.updateStatus(id, status)
+      await bookingService.updateBookingStatus(id, status.toUpperCase() as 'PENDING' | 'CONFIRMED' | 'CANCELLED')
       toast({
         title: 'Booking status updated',
         status: 'success',
@@ -36,6 +56,28 @@ export function BookingPage() {
         duration: 5000,
         isClosable: true,
       })
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoadingForm(true)
+    try {
+      await bookingService.createBooking(formData)
+      toast({
+        title: 'Booking created',
+        status: 'success',
+        duration: 3000,
+      })
+      navigate('/bookings')
+    } catch (error) {
+      toast({
+        title: 'Error creating booking',
+        status: 'error',
+        duration: 3000,
+      })
+    } finally {
+      setLoadingForm(false)
     }
   }
 
@@ -67,7 +109,7 @@ export function BookingPage() {
                   colorScheme={
                     booking.status === 'confirmed'
                       ? 'green'
-                      : booking.status === 'canceled'
+                      : booking.status === 'cancelled'
                       ? 'red'
                       : 'yellow'
                   }
@@ -84,13 +126,46 @@ export function BookingPage() {
                 >
                   <option value="pending">Pending</option>
                   <option value="confirmed">Confirmed</option>
-                  <option value="canceled">Canceled</option>
+                  <option value="cancelled">Cancelled</option>
                 </Select>
               </Td>
             </Tr>
           ))}
         </Tbody>
       </Table>
+      <Box p={4}>
+        <VStack spacing={4} as="form" onSubmit={handleSubmit}>
+          <FormControl isRequired>
+            <FormLabel>Service</FormLabel>
+            <Select
+              value={formData.serviceId}
+              onChange={(e) => setFormData({ ...formData, serviceId: e.target.value })}
+            >
+              <option value="">Select a service</option>
+              {/* Add service options here */}
+            </Select>
+          </FormControl>
+          <FormControl isRequired>
+            <FormLabel>Date</FormLabel>
+            <Input
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            />
+          </FormControl>
+          <FormControl isRequired>
+            <FormLabel>Time</FormLabel>
+            <Input
+              type="time"
+              value={formData.time}
+              onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+            />
+          </FormControl>
+          <Button type="submit" colorScheme="blue" isLoading={loadingForm}>
+            Book Now
+          </Button>
+        </VStack>
+      </Box>
     </Box>
   )
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import { useAuth } from './useAuth'
 
@@ -15,6 +15,14 @@ export function useFetch<T>({ url, method = 'GET', body, headers = {} }: UseFetc
   const [loading, setLoading] = useState(true)
   const { token } = useAuth()
 
+  const memoizedHeaders = useMemo(() => {
+    const authHeader = token ? `Bearer ${token}` : undefined;
+    return {
+      ...headers,
+      ...(authHeader && { Authorization: authHeader }),
+    };
+  }, [headers, token]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -23,10 +31,7 @@ export function useFetch<T>({ url, method = 'GET', body, headers = {} }: UseFetc
           url,
           method,
           data: body,
-          headers: {
-            ...headers,
-            Authorization: token ? `Bearer ${token}` : undefined,
-          },
+          headers: memoizedHeaders,
         })
         setData(response.data)
       } catch (err) {
@@ -37,7 +42,7 @@ export function useFetch<T>({ url, method = 'GET', body, headers = {} }: UseFetc
     }
 
     fetchData()
-  }, [url, method, body, headers, token])
+  }, [url, method, body, memoizedHeaders])
 
   return { data, error, loading }
 }

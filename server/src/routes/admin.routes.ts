@@ -1,42 +1,106 @@
-import { Router, Request, Response } from 'express';
-import { PrismaClient, Role } from '@prisma/client';
+import { Router } from 'express';
+import { PrismaClient } from '@prisma/client';
+import { authenticate } from '../middleware/auth.middleware';
+import { requireRole } from '../middleware/auth.middleware';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// Extend Request type to include user property
-declare global {
-  namespace Express {
-    interface Request {
-      user?: { id: string; role: Role }; // Assuming user is attached by authMiddleware with id and role
-    }
-  }
-}
-
-// Get dashboard statistics (Admin only)
-router.get('/stats', async (req: Request, res: Response) => {
-  if (req.user?.role !== Role.ADMIN) {
-    return res.status(403).json({ message: 'Access denied. Admin role required.' });
-  }
-
+// Get dashboard stats
+router.get('/dashboard', authenticate, requireRole(['ADMIN']), async (req, res) => {
   try {
-    const totalProducts = await prisma.product.count();
-    const totalBookings = await prisma.booking.count();
-    const totalFeedback = await prisma.feedback.count();
-    const totalUsers = await prisma.user.count();
-    const totalFiles = await prisma.file.count();
-
-    res.json({
+    const [
+      totalUsers,
       totalProducts,
       totalBookings,
-      totalFeedback,
-      totalUsers,
       totalFiles,
+      totalFeedback
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.product.count(),
+      prisma.booking.count(),
+      prisma.file.count(),
+      prisma.feedback.count()
+    ]);
+
+    res.json({
+      stats: {
+        totalUsers,
+        totalProducts,
+        totalBookings,
+        totalFiles,
+        totalFeedback
+      }
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error fetching dashboard statistics' });
+    console.error('Dashboard stats error:', error);
+    res.status(500).json({ message: 'Error fetching dashboard stats' });
   }
 });
 
-export const adminRouter = router; 
+// Get all users
+router.get('/users', authenticate, requireRole(['ADMIN']), async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    });
+
+    res.json(users);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Error fetching users' });
+  }
+});
+
+// Update user role
+router.put('/users/:id/role', authenticate, requireRole(['ADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!['ADMIN', 'STAFF', 'USER'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id },
+      data: { role },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      }
+    });
+
+    res.json(user);
+  } catch (error) {
+    console.error('Update user role error:', error);
+    res.status(500).json({ message: 'Error updating user role' });
+  }
+});
+
+// Delete user
+router.delete('/users/:id', authenticate, requireRole(['ADMIN']), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await prisma.user.delete({
+      where: { id }
+    });
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Error deleting user' });
+  }
+});
+
+export default router; 

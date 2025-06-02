@@ -1,4 +1,4 @@
-import React from 'react'
+import { useState } from 'react';
 import {
   Box,
   Button,
@@ -7,56 +7,92 @@ import {
   Input,
   VStack,
   Heading,
+  Text,
   useToast,
-} from '@chakra-ui/react'
-import { useAuth } from '../hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
+  Container,
+  Link,
+} from '@chakra-ui/react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { LoginData } from '../services/auth.service';
 
 export default function Login() {
-  const [email, setEmail] = React.useState('')
-  const [password, setPassword] = React.useState('')
-  const { login } = useAuth() || { login: () => {} }
-  const navigate = useNavigate()
-  const toast = useToast()
+  const [formData, setFormData] = useState<LoginData>({
+    email: '',
+    password: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const toast = useToast();
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
+    setLoading(true);
     try {
-      await login(email, password)
-      navigate('/dashboard')
+      await login(formData);
+      toast({
+        title: 'Success',
+        description: 'Login successful',
+        status: 'success',
+        duration: 3000,
+      });
+      navigate('/dashboard');
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Invalid credentials',
+        description: 'Invalid email or password',
         status: 'error',
-        duration: 5000,
-        isClosable: true,
-      })
+        duration: 3000,
+      });
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
-    <Box minH="100vh" display="flex" alignItems="center" justifyContent="center">
-      <Box w="400px" p={8} borderWidth={1} borderRadius="lg" boxShadow="lg">
-        <VStack spacing={6}>
-          <Heading>Login to WorkCore</Heading>
-          <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+    <Container maxW="container.sm" py={10}>
+      <VStack spacing={8}>
+        <Heading>Login to WorkCore</Heading>
+        <Box w="100%" p={8} borderWidth={1} borderRadius="lg">
+          <form onSubmit={handleSubmit}>
             <VStack spacing={4}>
               <FormControl isRequired>
                 <FormLabel>Email</FormLabel>
-                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
               </FormControl>
+
               <FormControl isRequired>
                 <FormLabel>Password</FormLabel>
-                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Input
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
               </FormControl>
-              <Button type="submit" colorScheme="brand" width="full">
+
+              <Button
+                type="submit"
+                colorScheme="blue"
+                width="100%"
+                isLoading={loading}
+              >
                 Login
               </Button>
             </VStack>
           </form>
-        </VStack>
-      </Box>
-    </Box>
-  )
+        </Box>
+        <Text>
+          Don't have an account?{' '}
+          <Link as={RouterLink} to="/register" color="blue.500">
+            Register here
+          </Link>
+        </Text>
+      </VStack>
+    </Container>
+  );
 }

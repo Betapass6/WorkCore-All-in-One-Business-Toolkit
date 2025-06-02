@@ -8,21 +8,40 @@ export interface Feedback {
   rating: number
   comment: string
   createdAt: string
+  user: {
+    id: string
+    name: string
+  }
 }
 
-export const feedbackService = {
-  async getAll() {
-    const { data } = await api.get<Feedback[]>('/feedback')
-    return data
+export interface CreateFeedbackData {
+  rating: number
+  comment: string
+  productId?: string
+  serviceId?: string
+}
+
+const feedbackService = {
+  async getFeedbacks(params?: { 
+    productId?: string
+    serviceId?: string
+    rating?: number
+    page?: number
+    limit?: number
+  }) {
+    const response = await api.get('/feedback', { params })
+    return response.data
   },
 
-  async create(feedback: Omit<Feedback, 'id' | 'createdAt'>) {
-    const { data } = await api.post<Feedback>('/feedback', feedback)
-    return data
+  async createFeedback(data: CreateFeedbackData) {
+    const response = await api.post('/feedback', data)
+    return response.data
   },
 
-  async getByProduct(productId: string) {
-    const { data } = await api.get<Feedback[]>(`/feedback/product/${productId}`)
-    return data
+  async getFeedback(id: string) {
+    const response = await api.get(`/feedback/${id}`)
+    return response.data
   }
-} 
+}
+
+export default feedbackService 

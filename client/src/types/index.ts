@@ -49,6 +49,8 @@ export interface Feedback {
   rating: number
   createdAt: string
   userId: string
+  serviceId: string
+  service: Service
 }
 
 export interface File {

@@ -1,4 +1,3 @@
-import React, { useRef } from 'react'
 import {
   AlertDialog,
   AlertDialogBody,
@@ -8,6 +7,7 @@ import {
   AlertDialogOverlay,
   Button,
 } from '@chakra-ui/react'
+import { useRef } from 'react'
 
 interface ConfirmDialogProps {
   isOpen: boolean
@@ -28,7 +28,7 @@ export function ConfirmDialog({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
 }: ConfirmDialogProps) {
-  const cancelRef = useRef<HTMLButtonElement>(null)
+  const cancelRef = useRef(null)
 
   return (
     <AlertDialog
@@ -38,8 +38,12 @@ export function ConfirmDialog({
     >
       <AlertDialogOverlay>
         <AlertDialogContent>
-          <AlertDialogHeader>{title}</AlertDialogHeader>
+          <AlertDialogHeader fontSize="lg" fontWeight="bold">
+            {title}
+          </AlertDialogHeader>
+
           <AlertDialogBody>{message}</AlertDialogBody>
+
           <AlertDialogFooter>
             <Button ref={cancelRef} onClick={onClose}>
               {cancelText}

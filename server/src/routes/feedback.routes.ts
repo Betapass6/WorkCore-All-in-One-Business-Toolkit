@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 declare global {
   namespace Express {
     interface Request {
-      user?: { id: string; role: Role }; // Assuming user is attached by authMiddleware with id and role
+      user?: { userId: string; role: string }; // Assuming user is attached by authMiddleware with id and role
     }
   }
 }
@@ -32,7 +32,7 @@ router.post(
 
     try {
       const { rating, comment, productId, serviceId } = req.body;
-      const userId = req.user!.id; // Get user ID from auth middleware
+      const userId = req.user!.userId; // Get user ID from auth middleware
 
       // Ensure either productId or serviceId is provided, but not both
       if ((!productId && !serviceId) || (productId && serviceId)) {

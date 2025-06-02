@@ -34,7 +34,7 @@ router.post(
           stock,
           category,
           supplierId,
-          userId: req.user!.id, // Associate product with the logged-in user (Admin/Staff)
+          userId: req.user!.userId, // Associate product with the logged-in user (Admin/Staff)
         },
       });
       res.status(201).json(product);

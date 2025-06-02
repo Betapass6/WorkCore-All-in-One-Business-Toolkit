@@ -1,13 +1,13 @@
 import { create } from 'zustand'
-import { Product, productService } from '../services/product.service'
+import productService, { Product, CreateProductData } from '../services/product.service'
 
 interface ProductState {
   products: Product[]
   loading: boolean
   error: string | null
   fetchProducts: () => Promise<void>
-  addProduct: (product: Omit<Product, 'id'>) => Promise<void>
-  updateProduct: (id: string, product: Partial<Product>) => Promise<void>
+  addProduct: (product: CreateProductData) => Promise<void>
+  updateProduct: (id: string, product: Partial<CreateProductData>) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
 }
 
@@ -18,7 +18,7 @@ export const useProductStore = create<ProductState>((set) => ({
   fetchProducts: async () => {
     set({ loading: true, error: null })
     try {
-      const products = await productService.getAll()
+      const products = await productService.getProducts()
       set({ products, loading: false })
     } catch (error) {
       set({ error: 'Failed to fetch products', loading: false })
@@ -27,7 +27,7 @@ export const useProductStore = create<ProductState>((set) => ({
   addProduct: async (product) => {
     set({ loading: true, error: null })
     try {
-      const newProduct = await productService.create(product)
+      const newProduct = await productService.createProduct(product)
       set((state) => ({
         products: [...state.products, newProduct],
         loading: false,
@@ -39,7 +39,7 @@ export const useProductStore = create<ProductState>((set) => ({
   updateProduct: async (id, product) => {
     set({ loading: true, error: null })
     try {
-      const updatedProduct = await productService.update(id, product)
+      const updatedProduct = await productService.updateProduct(id, product)
       set((state) => ({
         products: state.products.map((p) =>
           p.id === id ? updatedProduct : p
@@ -53,7 +53,7 @@ export const useProductStore = create<ProductState>((set) => ({
   deleteProduct: async (id) => {
     set({ loading: true, error: null })
     try {
-      await productService.delete(id)
+      await productService.deleteProduct(id)
       set((state) => ({
         products: state.products.filter((p) => p.id !== id),
         loading: false,
