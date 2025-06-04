@@ -24,20 +24,28 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const toast = useToast();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(formData);
+      await login(formData.email, formData.password);
       toast({
         title: 'Success',
         description: 'Login successful',
         status: 'success',
         duration: 3000,
       });
-      navigate('/dashboard');
+      
+      // Redirect based on user role
+      if (user?.role === 'ADMIN') {
+        navigate('/admin/dashboard');
+      } else if (user?.role === 'STAFF') {
+        navigate('/staff/dashboard');
+      } else {
+        navigate('/user/dashboard');
+      }
     } catch (error) {
       toast({
         title: 'Error',

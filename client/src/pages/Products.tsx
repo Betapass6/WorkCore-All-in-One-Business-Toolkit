@@ -1,46 +1,47 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
+  Card,
+  CardContent,
+  Typography,
+  TextField,
+  MenuItem,
   Button,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  useDisclosure,
-  FormControl,
-  FormLabel,
-  Input,
-  Select,
-  useToast,
-  HStack,
   IconButton,
-  Text,
-  AlertDialog,
-  AlertDialogBody,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogContent,
-  AlertDialogOverlay,
-  Spinner,
-  Flex,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalCloseButton,
-} from '@chakra-ui/react';
-import { EditIcon, DeleteIcon, SearchIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
-import productService, { Product, CreateProductData } from '../services/product.service';
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Rating,
+  Chip,
+  Pagination,
+  useTheme,
+} from '@mui/material';
+import {
+  Add as AddIcon,
+  Edit as EditIcon,
+  Delete as DeleteIcon,
+  Search as SearchIcon,
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import productService from '../services/product.service';
+import { Product, ProductFilters } from '../types/product';
+import { toast } from 'react-toastify';
 
-export default function Products() {
+const Products = () => {
+  const theme = useTheme();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
-  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const [formData, setFormData] = useState<CreateProductData>({
+  const [categories, setCategories] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('');
+  const [totalPages, setTotalPages] = useState(1);
+  const [open, setOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [formData, setFormData] = useState({
     name: '',
     description: '',
     price: 0,
@@ -48,314 +49,317 @@ export default function Products() {
     category: '',
     supplierId: '',
   });
-  const [editMode, setEditMode] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const toast = useToast();
-  const cancelRef = useRef(null);
-  const PAGE_SIZE = 10;
 
   useEffect(() => {
-    loadProducts();
-    loadSuppliers();
-  }, [page, search]);
+    fetchProducts();
+    fetchCategories();
+  }, [page, search, category]);
 
-  const loadProducts = async () => {
-    setLoading(true);
+  const fetchProducts = async () => {
     try {
-      const data = await productService.getProducts({ search, page, limit: PAGE_SIZE });
-      setProducts(data.items || data); // support both paginated and non-paginated
-      setTotalPages(data.totalPages || 1);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load products',
-        status: 'error',
-        duration: 3000,
+      const response = await productService.getProducts({
+        search,
+        category,
+        page,
+        limit: 12,
       });
-    } finally {
-      setLoading(false);
+      setProducts(response.products);
+      setTotalPages(Math.ceil(response.total / 12));
+    } catch (error) {
+      toast.error('Failed to fetch products');
     }
   };
 
-  const loadSuppliers = async () => {
+  const fetchCategories = async () => {
     try {
-      const data = await productService.getSuppliers();
-      setSuppliers(data);
+      const data = await productService.getCategories();
+      setCategories(data);
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load suppliers',
-        status: 'error',
-        duration: 3000,
+      toast.error('Failed to fetch categories');
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    setPage(value);
+  };
+
+  const handleOpenDialog = (product?: Product) => {
+    if (product) {
+      setSelectedProduct(product);
+      setFormData({
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        stock: product.stock,
+        description: product.description || '',
+        supplierId: product.supplierId || '',
+      });
+    } else {
+      setSelectedProduct(null);
+      setFormData({
+        name: '',
+        category: '',
+        price: 0,
+        stock: 0,
+        description: '',
+        supplierId: '',
       });
     }
+    setOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setOpen(false);
+    setSelectedProduct(null);
+    setFormData({
+      name: '',
+      category: '',
+      price: 0,
+      stock: 0,
+      description: '',
+      supplierId: '',
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editMode && editId) {
-        await productService.updateProduct(editId, formData);
-        toast({
-          title: 'Success',
-          description: 'Product updated successfully',
-          status: 'success',
-          duration: 3000,
-        });
+      const data = {
+        name: formData.name,
+        category: formData.category,
+        price: formData.price,
+        stock: formData.stock,
+        description: formData.description,
+        supplierId: formData.supplierId,
+      };
+
+      if (selectedProduct) {
+        await productService.updateProduct(selectedProduct.id, data);
+        toast.success('Product updated successfully');
       } else {
-        await productService.createProduct(formData);
-        toast({
-          title: 'Success',
-          description: 'Product created successfully',
-          status: 'success',
-          duration: 3000,
-        });
+        await productService.createProduct(data);
+        toast.success('Product created successfully');
       }
-      onClose();
-      setEditMode(false);
-      setEditId(null);
-      loadProducts();
+
+      handleCloseDialog();
+      fetchProducts();
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to save product',
-        status: 'error',
-        duration: 3000,
-      });
+      toast.error(selectedProduct ? 'Failed to update product' : 'Failed to create product');
     }
   };
 
-  const handleEdit = (product: Product) => {
-    setFormData({
-      name: product.name,
-      description: product.description,
-      price: product.price,
-      stock: product.stock,
-      category: product.category,
-      supplierId: product.supplierId,
-    });
-    setEditMode(true);
-    setEditId(product.id);
-    onOpen();
-  };
-
-  const handleDelete = (id: string) => {
-    setDeleteId(id);
-    setIsDeleteOpen(true);
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteId) return;
-    try {
-      await productService.deleteProduct(deleteId);
-      toast({
-        title: 'Deleted',
-        description: 'Product deleted successfully',
-        status: 'success',
-        duration: 3000,
-      });
-      setIsDeleteOpen(false);
-      setDeleteId(null);
-      loadProducts();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete product',
-        status: 'error',
-        duration: 3000,
-      });
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      try {
+        await productService.deleteProduct(id);
+        toast.success('Product deleted successfully');
+        fetchProducts();
+      } catch (error) {
+        toast.error('Failed to delete product');
+      }
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    loadProducts();
-  };
+  const isAdmin = user?.role === 'ADMIN';
+  const isStaff = user?.role === 'STAFF';
 
   return (
-    <Box p={5}>
-      <HStack mb={4} spacing={4}>
-        <Button colorScheme="blue" onClick={() => { setEditMode(false); setFormData({ name: '', description: '', price: 0, stock: 0, category: '', supplierId: '' }); onOpen(); }}>
-          Add Product
-        </Button>
-        <form onSubmit={handleSearch} style={{ display: 'flex', alignItems: 'center' }}>
-          <Input
-            placeholder="Search products..."
+    <Box sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <Typography variant="h4" component="h1">
+          Products
+        </Typography>
+        {(isAdmin || isStaff) && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => handleOpenDialog()}
+          >
+            Add Product
+          </Button>
+        )}
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <TextField
+            fullWidth
+            label="Search"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            mr={2}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            InputProps={{
+              startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+            }}
           />
-          <IconButton aria-label="Search" icon={<SearchIcon />} type="submit" />
-        </form>
-      </HStack>
+          <TextField
+            fullWidth
+            select
+            label="Category"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <MenuItem value="">All Categories</MenuItem>
+            {categories.map((category) => (
+              <MenuItem key={category} value={category}>
+                {category}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+      </Box>
 
-      {loading ? <Spinner /> : (
-        <>
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>Name</Th>
-                <Th>Category</Th>
-                <Th>Price</Th>
-                <Th>Stock</Th>
-                <Th>Supplier</Th>
-                <Th>Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {products.map((product) => (
-                <Tr key={product.id}>
-                  <Td>{product.name}</Td>
-                  <Td>{product.category}</Td>
-                  <Td>${product.price}</Td>
-                  <Td>{product.stock}</Td>
-                  <Td>{suppliers.find(s => s.id === product.supplierId)?.name}</Td>
-                  <Td>
-                    <HStack spacing={2}>
-                      <IconButton
-                        aria-label="Edit product"
-                        icon={<EditIcon />}
-                        size="sm"
-                        onClick={() => handleEdit(product)}
-                      />
-                      <IconButton
-                        aria-label="Delete product"
-                        icon={<DeleteIcon />}
-                        size="sm"
-                        colorScheme="red"
-                        onClick={() => handleDelete(product.id)}
-                      />
-                    </HStack>
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-
-          <Flex justify="space-between" align="center" mt={4}>
-            <Text>
-              Page {page} of {totalPages}
-            </Text>
-            <HStack>
-              <IconButton
-                aria-label="Previous page"
-                icon={<ChevronLeftIcon />}
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                isDisabled={page === 1}
-              />
-              <IconButton
-                aria-label="Next page"
-                icon={<ChevronRightIcon />}
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                isDisabled={page === totalPages}
-              />
-            </HStack>
-          </Flex>
-        </>
-      )}
-
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>{editMode ? 'Edit Product' : 'Add Product'}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <form onSubmit={handleSubmit}>
-              <FormControl mb={4}>
-                <FormLabel>Name</FormLabel>
-                <Input
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+        {products.map((product) => (
+          <Box key={product.id} sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.33% - 16px)' } }}>
+            <Card
+              sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                '&:hover': {
+                  boxShadow: theme.shadows[4],
+                  cursor: 'pointer',
+                },
+              }}
+              onClick={() => navigate(`/products/${product.id}`)}
+            >
+              <CardContent>
+                <Typography variant="h6" component="h2" gutterBottom>
+                  {product.name}
+                </Typography>
+                <Typography color="text.secondary" gutterBottom>
+                  {product.category}
+                </Typography>
+                <Typography variant="h6" color="primary" gutterBottom>
+                  ${product.price.toFixed(2)}
+                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Rating value={product.feedbacks?.[0]?.rating || 0} readOnly size="small" />
+                  <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                    ({product.feedbacks?.length || 0} reviews)
+                  </Typography>
+                </Box>
+                <Chip
+                  label={`Stock: ${product.stock}`}
+                  color={product.stock > 0 ? 'success' : 'error'}
+                  size="small"
                 />
-              </FormControl>
-              <FormControl mb={4}>
-                <FormLabel>Description</FormLabel>
-                <Input
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  required
-                />
-              </FormControl>
-              <FormControl mb={4}>
-                <FormLabel>Price</FormLabel>
-                <Input
+                {(isAdmin || isStaff) && (
+                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenDialog(product);
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(product.id);
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Box>
+        ))}
+      </Box>
+
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+        <Pagination
+          count={totalPages}
+          page={page}
+          onChange={handlePageChange}
+          color="primary"
+        />
+      </Box>
+
+      <Dialog open={open} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>
+          {selectedProduct ? 'Edit Product' : 'Add New Product'}
+        </DialogTitle>
+        <form onSubmit={handleSubmit}>
+          <DialogContent>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                fullWidth
+                label="Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+              <TextField
+                fullWidth
+                select
+                label="Category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                required
+              >
+                {categories.map((category) => (
+                  <MenuItem key={category} value={category}>
+                    {category}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <Box sx={{ display: 'flex', gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Price"
                   type="number"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
                   required
+                  inputProps={{ min: 0, step: 0.01 }}
                 />
-              </FormControl>
-              <FormControl mb={4}>
-                <FormLabel>Stock</FormLabel>
-                <Input
+                <TextField
+                  fullWidth
+                  label="Stock"
                   type="number"
                   value={formData.stock}
                   onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
                   required
+                  inputProps={{ min: 0 }}
                 />
-              </FormControl>
-              <FormControl mb={4}>
-                <FormLabel>Category</FormLabel>
-                <Input
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  required
-                />
-              </FormControl>
-              <FormControl mb={4}>
-                <FormLabel>Supplier</FormLabel>
-                <Select
-                  value={formData.supplierId}
-                  onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
-                  required
-                >
-                  <option value="">Select a supplier</option>
-                  {suppliers.map((supplier) => (
-                    <option key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-              <Button type="submit" colorScheme="blue" mr={3}>
-                {editMode ? 'Update' : 'Create'}
-              </Button>
-              <Button onClick={onClose}>Cancel</Button>
-            </form>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-
-      <AlertDialog
-        isOpen={isDeleteOpen}
-        leastDestructiveRef={cancelRef}
-        onClose={() => setIsDeleteOpen(false)}
-      >
-        <AlertDialogOverlay />
-        <AlertDialogContent>
-          <AlertDialogHeader fontSize="lg" fontWeight="bold">
-            Delete Product
-          </AlertDialogHeader>
-          <AlertDialogBody>
-            Are you sure you want to delete this product? This action cannot be undone.
-          </AlertDialogBody>
-          <AlertDialogFooter>
-            <Button ref={cancelRef} onClick={() => setIsDeleteOpen(false)}>
-              Cancel
+              </Box>
+              <TextField
+                fullWidth
+                label="Description"
+                multiline
+                rows={4}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+              <TextField
+                fullWidth
+                label="Supplier ID"
+                value={formData.supplierId}
+                onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button type="submit" variant="contained">
+              {selectedProduct ? 'Update' : 'Create'}
             </Button>
-            <Button colorScheme="red" onClick={confirmDelete} ml={3}>
-              Delete
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          </DialogActions>
+        </form>
+      </Dialog>
     </Box>
   );
-} 
+};
+
+export default Products; 

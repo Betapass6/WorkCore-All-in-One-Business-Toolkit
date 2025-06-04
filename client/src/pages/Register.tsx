@@ -29,7 +29,7 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     try {
-      await authService.register(formData);
+      await authService.register(formData.name, formData.email, formData.password);
       toast({
         title: 'Success',
         description: 'Registration successful. Please login.',

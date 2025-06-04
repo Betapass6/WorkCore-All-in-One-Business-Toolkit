@@ -10,11 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@chakra-ui/css-reset": "^2.3.0",
     "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^2.10.9",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@hookform/resolvers": "^3.3.4",
+    "@mui/icons-material": "^7.1.1",
+    "@mui/material": "^7.1.1",
     "axios": "^1.9.0",
     "date-fns": "^3.3.1",
     "framer-motion": "^11.18.2",

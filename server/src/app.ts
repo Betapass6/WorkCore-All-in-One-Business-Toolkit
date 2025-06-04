@@ -8,6 +8,7 @@ import { feedbackRouter } from './routes/feedback.routes';
 import fileRouter from './routes/file.routes';
 import { supplierRouter } from './routes/supplier.routes';
 import adminRouter from './routes/admin.routes';
+import userRouter from './routes/user.routes';
 import serviceRouter from './routes/service.routes';
 import { errorHandler } from './middleware/error.middleware';
 import { authMiddleware } from './middleware/auth.middleware';
@@ -19,10 +20,14 @@ import { requestLogger } from './middleware/logger.middleware';
 import { apiLimiter } from './middleware/rate-limit.middleware';
 import { authenticate } from './middleware/auth.middleware';
 import morgan from 'morgan';
+import { initScheduler } from './utils/scheduler';
 
 dotenv.config();
 
 const app = express();
+
+// Initialize scheduler
+initScheduler();
 
 // Middleware
 app.use(cors());
@@ -56,6 +61,9 @@ app.use('/api/feedback', feedbackRouter);
 app.use('/api/files', fileRouter);
 app.use('/api/suppliers', supplierRouter); // Client/Staff can view suppliers (needed for product relation)
 
+// User routes (requires authentication)
+app.use('/api/user', userRouter);
+
 // Admin routes requiring ADMIN role
 app.use('/api/admin', requireRole(Role.ADMIN), adminRouter); // Dashboard stats route
 // Apply requireRole(Role.ADMIN) to specific routes within other routers if they should be admin-only
@@ -75,7 +83,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 // Error handling
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

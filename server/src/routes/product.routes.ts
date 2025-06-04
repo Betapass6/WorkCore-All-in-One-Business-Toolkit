@@ -33,9 +33,13 @@ router.post(
           price,
           stock,
           category,
-          supplierId,
-          userId: req.user!.userId, // Associate product with the logged-in user (Admin/Staff)
+          supplier: {
+            connect: { id: supplierId }
+          }
         },
+        include: {
+          supplier: true
+        }
       });
       res.status(201).json(product);
     } catch (error) {

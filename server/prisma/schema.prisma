@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -5,6 +8,19 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  USER
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
 }
 
 model User {
@@ -15,98 +31,99 @@ model User {
   role      Role       @default(USER)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  products  Product[]
+
+  // Relations
   bookings  Booking[]
   feedbacks Feedback[]
   files     File[]
 }
 
 model Product {
-  id          String     @id @default(uuid())
+  id          String    @id @default(uuid())
   name        String
-  description String
+  category    String
   price       Float
   stock       Int
-  category    String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
   supplierId  String
-  supplier    Supplier   @relation(fields: [supplierId], references: [id])
-  userId      String
-  user        User       @relation(fields: [userId], references: [id])
+  supplier    Supplier  @relation(fields: [supplierId], references: [id])
   feedbacks   Feedback[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
 }
 
 model Supplier {
   id        String    @id @default(uuid())
   name      String
   contact   String
-  address   String
-  products  Product[]
+  address   String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+
+  // Relations
+  products  Product[]
 }
 
 model Service {
   id          String    @id @default(uuid())
   name        String
-  description String
   price       Float
-  duration    Int
-  bookings    Booking[]
-  feedbacks   Feedback[]
+  duration    Int       // Duration in minutes
+  description String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  // Relations
+  bookings    Booking[]
+  feedbacks   Feedback[]
 }
 
 model Booking {
-  id        String   @id @default(uuid())
+  id        String        @id @default(uuid())
   date      DateTime
-  time      String
-  status    Status   @default(PENDING)
-  serviceId String
-  service   Service  @relation(fields: [serviceId], references: [id])
+  time      String        // Store as HH:mm format
+  status    BookingStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  // Relations
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user      User          @relation(fields: [userId], references: [id])
+  serviceId String
+  service   Service       @relation(fields: [serviceId], references: [id])
 }
 
 model Feedback {
   id        String   @id @default(uuid())
-  title     String?  @default("")
-  content   String
-  rating    Int
+  rating    Int      // 1-5 stars
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
   productId String?
   product   Product? @relation(fields: [productId], references: [id])
   serviceId String?
   service   Service? @relation(fields: [serviceId], references: [id])
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model File {
-  id          String   @id @default(uuid())
-  fileName    String
-  uuid        String   @unique
-  size        Int
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  expiredAt   DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+  id            String    @id @default(uuid())
+  fileName      String
+  originalName  String
+  mimeType      String
+  size          Int
+  uuid          String    @unique // For sharing
+  expiredAt     DateTime
+  downloadCount Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-enum Role {
-  ADMIN
-  STAFF
-  USER
-}
-
-enum Status {
-  PENDING
-  CONFIRMED
-  CANCELLED
+  // Relations
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
 } 

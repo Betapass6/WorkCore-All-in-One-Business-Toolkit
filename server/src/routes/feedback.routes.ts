@@ -42,12 +42,41 @@ router.post(
       const feedback = await prisma.feedback.create({
         data: {
           rating,
-          content: comment, // Mapping comment to content based on schema
-          productId: productId || undefined, // Use undefined if not provided
-          serviceId: serviceId || undefined, // Use undefined if not provided
-          userId,
+          comment: comment || null,
+          user: {
+            connect: { id: userId }
+          },
+          ...(productId && {
+            product: {
+              connect: { id: productId }
+            }
+          }),
+          ...(serviceId && {
+            service: {
+              connect: { id: serviceId }
+            }
+          })
         },
-        include: { user: { select: { id: true, name: true } }, product: { select: { id: true, name: true } }, service: { select: { id: true, name: true } } }, // Include related data
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          product: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          service: {
+            select: {
+              id: true,
+              name: true
+            }
+          }
+        }
       });
 
       res.status(201).json(feedback);

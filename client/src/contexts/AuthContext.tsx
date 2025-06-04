@@ -11,51 +11,59 @@ interface User {
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
-  isAdmin: boolean
-  isStaff: boolean
-  login: (data: { email: string; password: string }) => Promise<void>
+  login: (email: string, password: string) => Promise<void>
   logout: () => void
   loading: boolean
-  token: string | null
+  isAdmin: boolean
+  isStaff: boolean
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(authService.getCurrentUser())
-  const [token, setToken] = useState<string | null>(authService.getToken())
-  const [loading, setLoading] = useState(false)
+  const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // No need to fetch user/token here, it's initialized from localStorage
-    // This effect can be used for other side effects if needed
+    checkAuth()
   }, [])
 
-  const login = async (data: { email: string; password: string }) => {
-    const response = await authService.login(data)
-    setUser(response.user)
-    setToken(response.token)
+  const checkAuth = async () => {
+    try {
+      const userData = await authService.getCurrentUser()
+      setUser(userData)
+    } catch (error) {
+      setUser(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const login = async (email: string, password: string) => {
+    const userData = await authService.login(email, password)
+    setUser(userData)
   }
 
   const logout = () => {
     authService.logout()
     setUser(null)
-    setToken(null)
   }
 
-  const value = {
-    user,
-    isAuthenticated: !!user,
-    isAdmin: user?.role === 'ADMIN',
-    isStaff: user?.role === 'STAFF',
-    login,
-    logout,
-    loading,
-    token,
-  }
+  const isAdmin = user?.role === 'ADMIN'
+  const isStaff = user?.role === 'STAFF'
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        login,
+        logout,
+        loading,
+        isAdmin,
+        isStaff,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

@@ -1,4 +1,5 @@
-import api from './api';
+import axios from 'axios';
+import { User } from '../types/user';
 
 const API_URL = '/api/auth';
 
@@ -24,48 +25,59 @@ export interface AuthResponse {
 }
 
 class AuthService {
-  async login(data: LoginData): Promise<AuthResponse> {
-    const response = await api.post('/auth/login', data);
-    if (response.data.token) {
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-    }
-    return response.data;
+  async login(email: string, password: string): Promise<User> {
+    const response = await axios.post(`${API_URL}/login`, { email, password });
+    const { user, token } = response.data;
+    localStorage.setItem('token', token);
+    return user;
   }
 
-  async register(data: RegisterData): Promise<AuthResponse> {
-    const response = await api.post('/auth/register', data);
-    return response.data;
+  async register(name: string, email: string, password: string): Promise<User> {
+    const response = await axios.post(`${API_URL}/register`, {
+      name,
+      email,
+      password,
+    });
+    const { user, token } = response.data;
+    localStorage.setItem('token', token);
+    return user;
   }
 
   logout(): void {
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  }
-
-  getCurrentUser(): AuthResponse['user'] | null {
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      return JSON.parse(userStr);
-    }
-    return null;
   }
 
   getToken(): string | null {
     return localStorage.getItem('token');
   }
 
+  async getCurrentUser(): Promise<User | null> {
+    const token = this.getToken();
+    if (!token) return null;
+
+    try {
+      const response = await axios.get(`${API_URL}/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get current user:', error);
+      this.logout();
+      return null;
+    }
+  }
+
   isAuthenticated(): boolean {
     return !!this.getToken();
   }
 
-  isAdmin(): boolean {
-    const user = this.getCurrentUser();
+  async isAdmin(): Promise<boolean> {
+    const user = await this.getCurrentUser();
     return user?.role === 'ADMIN';
   }
 
-  isStaff(): boolean {
-    const user = this.getCurrentUser();
+  async isStaff(): Promise<boolean> {
+    const user = await this.getCurrentUser();
     return user?.role === 'STAFF';
   }
 }

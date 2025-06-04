@@ -1,32 +1,29 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requireAdmin?: boolean;
-  requireStaff?: boolean;
+  requiredRole?: 'ADMIN' | 'STAFF' | 'USER';
 }
 
-export default function ProtectedRoute({
-  children,
-  requireAdmin = false,
-  requireStaff = false,
-}: ProtectedRouteProps) {
-  const { isAuthenticated, isAdmin, isStaff } = useAuth();
-  const location = useLocation();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+  const { user, isAuthenticated, isAdmin, isStaff } = useAuth();
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" replace />;
   }
 
-  if (requireAdmin && !isAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  if (requireStaff && !isStaff && !isAdmin) {
-    return <Navigate to="/dashboard" replace />;
+  if (requiredRole) {
+    if (requiredRole === 'ADMIN' && !isAdmin) {
+      return <Navigate to="/unauthorized" replace />;
+    }
+    if (requiredRole === 'STAFF' && !isStaff && !isAdmin) {
+      return <Navigate to="/unauthorized" replace />;
+    }
   }
 
   return <>{children}</>;
-} 
+};
+
+export default ProtectedRoute; 
