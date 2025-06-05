@@ -8,6 +8,10 @@ export default function Navbar() {
   const bg = useColorModeValue('white', 'gray.800')
   const borderColor = useColorModeValue('gray.200', 'gray.700')
 
+  if (user) {
+    return null;
+  }
+
   return (
     <Box bg={bg} px={4} borderBottom="1px" borderColor={borderColor}>
       <Flex h={16} alignItems="center" justifyContent="space-between">
@@ -18,25 +22,14 @@ export default function Navbar() {
         </Flex>
 
         <Flex alignItems="center" gap={4}>
-          {user ? (
-            <>
-              <Link as={RouterLink} to="/dashboard">
-                Dashboard
-              </Link>
-              <Button onClick={logout} variant="ghost">
-                Logout
-              </Button>
-            </>
-          ) : (
-            <>
-              <Link as={RouterLink} to="/login">
-                Login
-              </Link>
-              <Link as={RouterLink} to="/register">
-                Register
-              </Link>
-            </>
-          )}
+          <>
+            <Link as={RouterLink} to="/login">
+              Login
+            </Link>
+            <Link as={RouterLink} to="/register">
+              Register
+            </Link>
+          </>
         </Flex>
       </Flex>
     </Box>

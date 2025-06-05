@@ -16,6 +16,7 @@ import {
   Chip,
   Pagination,
   useTheme,
+  Grid as MuiGrid,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -186,36 +187,40 @@ const Products = () => {
       </Box>
 
       <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
-          <TextField
-            fullWidth
-            label="Search"
-            value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            InputProps={{
-              startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-            }}
-          />
-          <TextField
-            fullWidth
-            select
-            label="Category"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <MenuItem value="">All Categories</MenuItem>
-            {categories.map((category) => (
-              <MenuItem key={category} value={category}>
-                {category}
-              </MenuItem>
-            ))}
-          </TextField>
-        </Box>
+        <MuiGrid container spacing={2}>
+          <MuiGrid item component="div" xs={12} sm={6}>
+            <TextField
+              fullWidth
+              label="Search"
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+              }}
+            />
+          </MuiGrid>
+          <MuiGrid item component="div" xs={12} sm={6}>
+            <TextField
+              fullWidth
+              select
+              label="Category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <MenuItem value="">All Categories</MenuItem>
+              {categories.map((category) => (
+                <MenuItem key={category} value={category}>
+                  {category}
+                </MenuItem>
+              ))}
+            </TextField>
+          </MuiGrid>
+        </MuiGrid>
       </Box>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
+      <MuiGrid container spacing={3}>
         {products.map((product) => (
-          <Box key={product.id} sx={{ width: { xs: '100%', sm: 'calc(50% - 12px)', md: 'calc(33.33% - 16px)' } }}>
+          <MuiGrid item component="div" key={product.id} xs={12} sm={6} md={4}>
             <Card
               sx={{
                 height: '100%',
@@ -273,9 +278,9 @@ const Products = () => {
                 )}
               </CardContent>
             </Card>
-          </Box>
+          </MuiGrid>
         ))}
-      </Box>
+      </MuiGrid>
 
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
         <Pagination
@@ -314,26 +319,30 @@ const Products = () => {
                   </MenuItem>
                 ))}
               </TextField>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <TextField
-                  fullWidth
-                  label="Price"
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                  required
-                  inputProps={{ min: 0, step: 0.01 }}
-                />
-                <TextField
-                  fullWidth
-                  label="Stock"
-                  type="number"
-                  value={formData.stock}
-                  onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
-                  required
-                  inputProps={{ min: 0 }}
-                />
-              </Box>
+              <MuiGrid container spacing={2}>
+                <MuiGrid item component="div" xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Price"
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                    required
+                    inputProps={{ min: 0, step: 0.01 }}
+                  />
+                </MuiGrid>
+                <MuiGrid item component="div" xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Stock"
+                    type="number"
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                    required
+                    inputProps={{ min: 0 }}
+                  />
+                </MuiGrid>
+              </MuiGrid>
               <TextField
                 fullWidth
                 label="Description"

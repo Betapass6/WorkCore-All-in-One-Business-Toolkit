@@ -1,13 +1,18 @@
 import { Outlet } from 'react-router-dom'
-import { Box, AppBar, Toolbar, Typography, Drawer, List, ListItem, ListItemIcon, ListItemText, IconButton } from '@mui/material'
+import { Box, Flex, Text, VStack, HStack, IconButton, useDisclosure, Button } from '@chakra-ui/react'
+import { Drawer, DrawerOverlay, DrawerContent } from '@chakra-ui/react'
+import { List, ListItem, ListIcon } from '@chakra-ui/react'
 import {
   Menu as MenuIcon,
-  Dashboard as DashboardIcon,
-  ShoppingCart as ProductsIcon,
-  Event as BookingsIcon,
-  Feedback as FeedbackIcon,
-  Folder as FilesIcon,
-} from '@mui/icons-material'
+  HamburgerIcon,
+  SettingsIcon, // Example icon, replace with appropriate icons
+  InfoOutlineIcon,
+  StarIcon,
+  AttachmentIcon,
+  CalendarIcon, // Assuming a booking icon
+  ChatIcon, // Assuming a feedback icon
+  ViewIcon // Assuming a files icon
+} from '@chakra-ui/icons'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
@@ -19,118 +24,142 @@ export interface MainLayoutProps {
 }
 
 const MainLayout: React.FC<MainLayoutProps> = () => {
-  const [mobileOpen, setMobileOpen] = useState(false)
+  const { isOpen, onOpen, onClose } = useDisclosure()
   const navigate = useNavigate()
-  const { user } = useAuth() // Remove unused logout variable
+  const { user, logout } = useAuth()
 
   const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen)
+    isOpen ? onClose() : onOpen()
   }
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'Products', icon: <ProductsIcon />, path: '/products' },
-    { text: 'Bookings', icon: <BookingsIcon />, path: '/bookings' },
-    { text: 'Feedback', icon: <FeedbackIcon />, path: '/feedback' },
-    { text: 'Files', icon: <FilesIcon />, path: '/files' },
-  ]
+  // Define all possible menu items with required roles
+  const allMenuItems = [
+    { text: 'Dashboard', icon: <SettingsIcon />, path: '/', roles: ['ADMIN', 'STAFF', 'USER'] },
+    { text: 'Products', icon: <InfoOutlineIcon />, path: '/products', roles: ['ADMIN', 'STAFF', 'USER'] },
+    { text: 'Bookings', icon: <StarIcon />, path: '/bookings', roles: ['ADMIN', 'STAFF', 'USER'] },
+    { text: 'Feedback', icon: <ChatIcon />, path: '/feedback', roles: ['ADMIN', 'USER'] },
+    { text: 'Files', icon: <ViewIcon />, path: '/files', roles: ['ADMIN', 'USER'] },
+  ];
+
+  // Filter menu items based on user role
+  const filteredMenuItems = allMenuItems.filter(item =>
+    item.roles.includes(user?.role as any) // Cast user?.role to any to match array type
+  );
+
+  // Dynamically generate paths based on user role for filtered items
+  const roleBasedMenuItems = filteredMenuItems.map(item => ({
+    ...item,
+    path: item.text === 'Dashboard' ? '/' : `/${user?.role.toLowerCase()}${item.path}`
+  }));
 
   const drawer = (
-    <div>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
+    <VStack spacing={0} align="stretch">
+      <Box p="4">
+        <Text fontSize="xl" fontWeight="bold">
           WorkCore
-        </Typography>
-      </Toolbar>
-      <List>
-        {menuItems.map((item) => (
+        </Text>
+      </Box>
+      <List spacing={0}>
+        {roleBasedMenuItems.map((item) => (
           <ListItem
-            component="div" // Add component prop
             key={item.text}
+            p="4"
+            cursor="pointer"
+            _hover={{
+              bg: 'gray.100'
+            }}
             onClick={() => {
               navigate(item.path)
-              setMobileOpen(false)
+              onClose() // Close drawer on navigation
             }}
-            sx={{ cursor: 'pointer' }} // Add cursor pointer for better UX
           >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.text} />
+            <HStack spacing={4}>
+              <ListIcon as={() => item.icon} />
+              <Text>{item.text}</Text>
+            </HStack>
           </ListItem>
         ))}
       </List>
-    </div>
+    </VStack>
   )
 
   return (
     <Box sx={{ display: 'flex' }}>
-      <AppBar
+      {/* AppBar equivalent */}
+      <Box
+        as="header"
         position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-        }}
+        width="100%"
+        bg="blue.500" // Example background color
+        color="white" // Example text color
+        boxShadow="sm" // Example shadow
+        zIndex={1} // Ensure it stays on top
       >
-        <Toolbar>
+        <Flex h="64px" px="4" align="center">
           <IconButton
-            color="inherit"
             aria-label="open drawer"
-            edge="start"
+            icon={<HamburgerIcon />}
             onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
+            display={{ sm: 'none' }}
+            mr="2"
+            variant="unstyled"
+            color="white"
+          />
+          <Text fontSize="lg" fontWeight="bold" flexGrow={1}>
             {user?.name}
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth,
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': {
-              boxSizing: 'border-box',
-              width: drawerWidth,
-            },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
+          </Text>
+          <Button onClick={logout} variant="ghost" colorScheme="whiteAlpha">
+            Logout
+          </Button>
+        </Flex>
       </Box>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: '64px',
-        }}
+
+      {/* Container for Sidebar and Main Content */}
+      <Flex
+        as="section"
+        mt="64px" // Offset by header height
+        flexGrow={1}
+        width="100%" // Occupy full width below the header
       >
-        <Outlet />
-      </Box>
+        {/* Drawer (Sidebar) for small screens */}
+        <Box
+          as="nav"
+          width={{ base: 'full', sm: drawerWidth }}
+          flexShrink={{ sm: 0 }}
+        >
+          <Drawer
+            isOpen={isOpen}
+            onClose={onClose}
+            placement="left"
+            // Use Chakra UI's size prop or adjust in theme if needed
+            // size='xs'
+          >
+            <DrawerOverlay />
+            <DrawerContent>{drawer}</DrawerContent>
+          </Drawer>
+
+          {/* Permanent Drawer for larger screens */}
+          <Box
+            display={{ base: 'none', sm: 'block' }}
+            width={drawerWidth}
+            flexShrink={0}
+          >
+            {/* Permanent sidebar content */}
+            <Box position="fixed" height="100vh" width={drawerWidth} bg="gray.50"> {/* Example background */}
+              {drawer}
+            </Box>
+          </Box>
+        </Box>
+
+        {/* Main content area */}
+        <Box
+          as="main"
+          flexGrow={1}
+          p="6"
+        >
+          <Outlet />
+        </Box>
+      </Flex>
     </Box>
   )
 }

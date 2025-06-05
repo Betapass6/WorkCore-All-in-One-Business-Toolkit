@@ -1,2 +1,0 @@
-{"level":"info","message":{"duration":"16ms","ip":"::1","method":"GET","status":401,"url":"/me","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"}}
-{"level":"info","message":{"duration":"4ms","ip":"::1","method":"GET","status":401,"url":"/me","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"}}

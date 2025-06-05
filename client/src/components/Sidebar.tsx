@@ -39,7 +39,7 @@ export default function Sidebar() {
         <Link as={RouterLink} to="/files">
           Files
         </Link>
-        {user?.role === 'admin' && (
+        {user?.role === 'ADMIN' && (
           <Link as={RouterLink} to="/admin">
             Admin Panel
           </Link>
