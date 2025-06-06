@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 export interface UseFetchOptions {
   url?: string;
@@ -23,7 +23,7 @@ export function useFetch<T = any>(urlOrOptions: string | UseFetchOptions) {
           ? { url: urlOrOptions, method: 'GET' }
           : urlOrOptions;
 
-        const response = await axios({
+        const response = await api({
           url: options.url,
           method: options.method || 'GET',
           headers: {

@@ -1,4 +1,3 @@
-import React from 'react'
 import { Box, VStack, Link, Text } from '@chakra-ui/react'
 import { Link as RouterLink } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
@@ -21,22 +20,22 @@ export default function Sidebar() {
         <Text fontSize="xl" fontWeight="bold">
           WorkCore
         </Text>
-        <Link as={RouterLink} to="/dashboard">
+        <Link as={RouterLink} to={user ? `/dashboard/${user.role.toLowerCase()}` : "/dashboard"}>
           Dashboard
         </Link>
-        <Link as={RouterLink} to="/products">
+        <Link as={RouterLink} to={user ? `/products/${user.role.toLowerCase()}` : "/products"}>
           Products
         </Link>
-        <Link as={RouterLink} to="/services">
+        <Link as={RouterLink} to={user ? `/services/${user.role.toLowerCase()}` : "/services"}>
           Services
         </Link>
-        <Link as={RouterLink} to="/bookings">
+        <Link as={RouterLink} to={user ? `/bookings/${user.role.toLowerCase()}` : "/bookings"}>
           Bookings
         </Link>
-        <Link as={RouterLink} to="/feedback">
+        <Link as={RouterLink} to={user ? `/feedback/${user.role.toLowerCase()}` : "/feedback"}>
           Feedback
         </Link>
-        <Link as={RouterLink} to="/files">
+        <Link as={RouterLink} to={user ? `/files/${user.role.toLowerCase()}` : "/files"}>
           Files
         </Link>
         {user?.role === 'ADMIN' && (

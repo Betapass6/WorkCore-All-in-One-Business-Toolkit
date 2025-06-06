@@ -13,17 +13,17 @@ const RoleBasedRedirect = () => {
         // Redirect based on user role
         switch (user.role) {
           case 'ADMIN':
-            navigate('/admin/dashboard', { replace: true });
+            navigate('/dashboard/admin', { replace: true });
             break;
           case 'STAFF':
-            navigate('/staff/dashboard', { replace: true });
+            navigate('/dashboard/staff', { replace: true });
             break;
           case 'USER':
-            navigate('/user/dashboard', { replace: true });
+            navigate('/dashboard/user', { replace: true });
             break;
           default:
             // Fallback for unknown roles or just redirect to a default user dashboard
-            navigate('/user/dashboard', { replace: true });
+            navigate('/dashboard/user', { replace: true });
         }
       } else {
         // If not authenticated, redirect to login (although ProtectedRoute should handle this)
@@ -45,4 +45,4 @@ const RoleBasedRedirect = () => {
   return null;
 };
 
-export default RoleBasedRedirect; 
+export default RoleBasedRedirect;

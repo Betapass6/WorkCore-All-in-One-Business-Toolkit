@@ -87,29 +87,51 @@ router.post(
   }
 );
 
-// Get all feedback (Admin only)
-// Admin can filter by productId or rating
-router.get('/', async (req: Request, res: Response) => {
-  // Role check middleware should ideally handle this
+// Admin: get all feedback
+router.get('/admin', (req: Request, res: Response) => {
   if (req.user?.role !== Role.ADMIN) {
     return res.status(403).json({ message: 'Access denied. Admin role required.' });
   }
+  // identical to router.get('/')
+  // Admin can filter by productId or rating
+  router.get('/', async (req: Request, res: Response) => {
+    // Role check middleware should ideally handle this
+    if (req.user?.role !== Role.ADMIN) {
+      return res.status(403).json({ message: 'Access denied. Admin role required.' });
+    }
 
-  try {
-    const { productId, rating } = req.query;
-    const feedbacks = await prisma.feedback.findMany({
-      where: {
-        productId: productId as string | undefined,
-        rating: rating ? parseInt(rating as string) : undefined,
-      },
-      include: { user: { select: { id: true, name: true } }, product: { select: { id: true, name: true } }, service: { select: { id: true, name: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
-    res.json(feedbacks);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error fetching feedback' });
+    try {
+      const { productId, rating } = req.query;
+      const feedbacks = await prisma.feedback.findMany({
+        where: {
+          productId: productId as string | undefined,
+          rating: rating ? parseInt(rating as string) : undefined,
+        },
+        include: { user: { select: { id: true, name: true } }, product: { select: { id: true, name: true } }, service: { select: { id: true, name: true } } },
+        orderBy: { createdAt: 'desc' },
+      });
+      res.json(feedbacks);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error fetching feedback' });
+    }
+  });
+});
+
+// Staff: get all feedback (staff only, see all or only their own as needed)
+router.get('/staff', (req: Request, res: Response) => {
+  if (req.user?.role !== Role.STAFF) {
+    return res.status(403).json({ message: 'Access denied. Staff role required.' });
   }
+  // fetch feedback logic for staff...
+});
+
+// User: get all feedback (user only, only their own)
+router.get('/user', (req: Request, res: Response) => {
+  if (req.user?.role !== Role.USER) {
+    return res.status(403).json({ message: 'Access denied. User role required.' });
+  }
+  // fetch feedback logic for user...
 });
 
 // Get feedback for a specific product (Client/Staff can view)
@@ -160,4 +182,4 @@ router.get('/service/:serviceId',
     }
 });
 
-export const feedbackRouter = router; 
+export const feedbackRouter = router;

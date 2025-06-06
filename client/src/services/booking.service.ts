@@ -23,26 +23,25 @@ export interface CreateBookingData {
   time: string
 }
 
-const bookingService = {
-  async getBookings(params?: { status?: string; page?: number; limit?: number }) {
-    const response = await api.get('/bookings', { params })
-    return response.data
-  },
+class BookingService {
+  async getBookings(role: string) {
+    return api.get(`/bookings/${role.toLowerCase()}`)
+  }
 
   async createBooking(data: CreateBookingData) {
     const response = await api.post('/bookings', data)
     return response.data
-  },
+  }
 
   async updateBookingStatus(id: string, status: Booking['status']) {
     const response = await api.put(`/bookings/${id}`, { status })
     return response.data
-  },
+  }
 
   async getServices() {
     const response = await api.get('/services')
     return response.data
-  },
+  }
 
   async checkAvailability(serviceId: string, date: string, time: string) {
     const response = await api.get('/bookings/availability', {
@@ -52,4 +51,4 @@ const bookingService = {
   }
 }
 
-export default bookingService 
+export default new BookingService()

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -22,20 +22,26 @@ import {
   useToast,
   Spinner,
   IconButton,
+  SimpleGrid,
+  Card,
+  CardBody,
+  Text,
 } from '@chakra-ui/react';
 import { ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import { useFetch } from '../hooks/useFetch';
-import { DashboardLayout } from '../layouts/DashboardLayout';
 import { Booking, Service } from '../types';
 import bookingService, { Booking as BookingType } from '../services/booking.service';
+import dashboardService from '../services/dashboard.service';
+import { DashboardStats } from '../types/dashboard';
+import { useAuth } from '../hooks/useAuth';
 
 type SortField = 'date' | 'time' | 'service' | 'customer' | 'status';
 type SortOrder = 'asc' | 'desc';
 
 export default function Bookings() {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { data: bookings, loading } = useFetch<Booking[]>({ url: '/api/bookings' });
-  const { data: services } = useFetch<Service[]>({ url: '/api/services' });
+  const { data: bookings, loading } = useFetch<Booking[]>({ url: import.meta.env.VITE_API_URL + '/api/bookings' });
+  const { data: services } = useFetch<Service[]>({ url: import.meta.env.VITE_API_URL + '/api/services' });
   const [formData, setFormData] = useState({
     serviceId: '',
     date: '',
@@ -44,7 +50,35 @@ export default function Bookings() {
   const [editBooking, setEditBooking] = useState<Booking | null>(null);
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
   const toast = useToast();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.role) {
+      fetchStats(user.role);
+    } else {
+      setLoadingStats(false);
+    }
+  }, [user]);
+
+  const fetchStats = async (role: string) => {
+    try {
+      const data = await dashboardService.getStats(role);
+      setStats(data);
+    } catch (error) {
+      toast({
+        title: 'Failed to fetch stats',
+        description: 'There was an error loading the dashboard statistics',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setLoadingStats(false);
+    }
+  };
 
   const handleSort = (field: SortField) => {
     if (field === sortField) {
@@ -148,151 +182,178 @@ export default function Bookings() {
   if (loading) return <Spinner />;
 
   return (
-    <DashboardLayout>
-      <Box p={4}>
-        <Button onClick={() => { setEditBooking(null); setFormData({ serviceId: '', date: '', time: '' }); onOpen(); }} mb={4}>
-          New Booking
-        </Button>
+    <Box p={4}>
+      {!loadingStats && stats && (
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} mb={6}>
+          <Card>
+            <CardBody>
+              <Text fontSize="sm" color="gray.600" mb={1}>
+                Total Bookings
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold">{stats.totalBookings}</Text>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <Text fontSize="sm" color="gray.600" mb={1}>
+                My Bookings
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold">{stats.myBookings || 0}</Text>
+            </CardBody>
+          </Card>
+          <Card>
+            <CardBody>
+              <Text fontSize="sm" color="gray.600" mb={1}>
+                Total Revenue
+              </Text>
+              <Text fontSize="2xl" fontWeight="bold">${stats.totalRevenue}</Text>
+            </CardBody>
+          </Card>
+        </SimpleGrid>
+      )}
 
-        <Table variant="simple">
-          <Thead>
-            <Tr>
-              <Th cursor="pointer" onClick={() => handleSort('date')}>
-                Date
-                {sortField === 'date' && (
-                  <IconButton
-                    aria-label={`Sort ${sortOrder}`}
-                    icon={sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                    size="xs"
-                    ml={2}
-                    variant="ghost"
-                  />
-                )}
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('time')}>
-                Time
-                {sortField === 'time' && (
-                  <IconButton
-                    aria-label={`Sort ${sortOrder}`}
-                    icon={sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                    size="xs"
-                    ml={2}
-                    variant="ghost"
-                  />
-                )}
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('service')}>
-                Service
-                {sortField === 'service' && (
-                  <IconButton
-                    aria-label={`Sort ${sortOrder}`}
-                    icon={sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                    size="xs"
-                    ml={2}
-                    variant="ghost"
-                  />
-                )}
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('customer')}>
-                Customer
-                {sortField === 'customer' && (
-                  <IconButton
-                    aria-label={`Sort ${sortOrder}`}
-                    icon={sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                    size="xs"
-                    ml={2}
-                    variant="ghost"
-                  />
-                )}
-              </Th>
-              <Th cursor="pointer" onClick={() => handleSort('status')}>
-                Status
-                {sortField === 'status' && (
-                  <IconButton
-                    aria-label={`Sort ${sortOrder}`}
-                    icon={sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                    size="xs"
-                    ml={2}
-                    variant="ghost"
-                  />
-                )}
-              </Th>
-              <Th>Actions</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {sortedBookings.map((booking) => (
-              <Tr key={booking.id}>
-                <Td>{new Date(booking.date).toLocaleDateString()}</Td>
-                <Td>{booking.time}</Td>
-                <Td>{booking.service.name}</Td>
-                <Td>{booking.customer.name}</Td>
-                <Td>
-                  <Select
-                    value={booking.status}
-                    onChange={(e) => handleStatusChange(booking.id, e.target.value as BookingType['status'])}
-                  >
-                    <option value="PENDING">Pending</option>
-                    <option value="CONFIRMED">Confirmed</option>
-                    <option value="CANCELLED">Cancelled</option>
-                  </Select>
-                </Td>
-                <Td>
-                  <Button size="sm" onClick={() => handleEdit(booking)}>
-                    Edit
-                  </Button>
-                </Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
+      <Button onClick={() => { setEditBooking(null); setFormData({ serviceId: '', date: '', time: '' }); onOpen(); }} mb={4}>
+        New Booking
+      </Button>
 
-        <Modal isOpen={isOpen} onClose={onClose}>
-          <ModalOverlay />
-          <ModalContent>
-            <ModalHeader>{editBooking ? 'Edit Booking' : 'New Booking'}</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              <form onSubmit={handleSubmit}>
-                <FormControl mb={4}>
-                  <FormLabel>Service</FormLabel>
-                  <Select
-                    value={formData.serviceId}
-                    onChange={(e) => setFormData({ ...formData, serviceId: e.target.value })}
-                  >
-                    <option value="">Select a service</option>
-                    {services?.map((service) => (
-                      <option key={service.id} value={service.id}>
-                        {service.name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl mb={4}>
-                  <FormLabel>Date</FormLabel>
-                  <Input
-                    type="date"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  />
-                </FormControl>
-                <FormControl mb={4}>
-                  <FormLabel>Time</FormLabel>
-                  <Input
-                    type="time"
-                    value={formData.time}
-                    onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                  />
-                </FormControl>
-                <Button type="submit" colorScheme="blue" mr={3}>
-                  {editBooking ? 'Update' : 'Create'}
+      <Table variant="simple">
+        <Thead>
+          <Tr>
+            <Th cursor="pointer" onClick={() => handleSort('date')}>
+              Date
+              {sortField === 'date' && (
+                <IconButton
+                  aria-label={`Sort ${sortOrder}`}
+                  icon={sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                  size="xs"
+                  ml={2}
+                  variant="ghost"
+                />
+              )}
+            </Th>
+            <Th cursor="pointer" onClick={() => handleSort('time')}>
+              Time
+              {sortField === 'time' && (
+                <IconButton
+                  aria-label={`Sort ${sortOrder}`}
+                  icon={sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                  size="xs"
+                  ml={2}
+                  variant="ghost"
+                />
+              )}
+            </Th>
+            <Th cursor="pointer" onClick={() => handleSort('service')}>
+              Service
+              {sortField === 'service' && (
+                <IconButton
+                  aria-label={`Sort ${sortOrder}`}
+                  icon={sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                  size="xs"
+                  ml={2}
+                  variant="ghost"
+                />
+              )}
+            </Th>
+            <Th cursor="pointer" onClick={() => handleSort('customer')}>
+              Customer
+              {sortField === 'customer' && (
+                <IconButton
+                  aria-label={`Sort ${sortOrder}`}
+                  icon={sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                  size="xs"
+                  ml={2}
+                  variant="ghost"
+                />
+              )}
+            </Th>
+            <Th cursor="pointer" onClick={() => handleSort('status')}>
+              Status
+              {sortField === 'status' && (
+                <IconButton
+                  aria-label={`Sort ${sortOrder}`}
+                  icon={sortOrder === 'asc' ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                  size="xs"
+                  ml={2}
+                  variant="ghost"
+                />
+              )}
+            </Th>
+            <Th>Actions</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {sortedBookings.map((booking) => (
+            <Tr key={booking.id}>
+              <Td>{new Date(booking.date).toLocaleDateString()}</Td>
+              <Td>{booking.time}</Td>
+              <Td>{booking.service.name}</Td>
+              <Td>{booking.customer.name}</Td>
+              <Td>
+                <Select
+                  value={booking.status}
+                  onChange={(e) => handleStatusChange(booking.id, e.target.value as BookingType['status'])}
+                >
+                  <option value="PENDING">Pending</option>
+                  <option value="CONFIRMED">Confirmed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </Select>
+              </Td>
+              <Td>
+                <Button size="sm" onClick={() => handleEdit(booking)}>
+                  Edit
                 </Button>
-                <Button onClick={onClose}>Cancel</Button>
-              </form>
-            </ModalBody>
-          </ModalContent>
-        </Modal>
-      </Box>
-    </DashboardLayout>
+              </Td>
+            </Tr>
+          ))}
+        </Tbody>
+      </Table>
+
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{editBooking ? 'Edit Booking' : 'New Booking'}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <form onSubmit={handleSubmit}>
+              <FormControl mb={4}>
+                <FormLabel>Service</FormLabel>
+                <Select
+                  value={formData.serviceId}
+                  onChange={(e) => setFormData({ ...formData, serviceId: e.target.value })}
+                >
+                  <option value="">Select a service</option>
+                  {services?.map((service) => (
+                    <option key={service.id} value={service.id}>
+                      {service.name}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl mb={4}>
+                <FormLabel>Date</FormLabel>
+                <Input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                />
+              </FormControl>
+              <FormControl mb={4}>
+                <FormLabel>Time</FormLabel>
+                <Input
+                  type="time"
+                  value={formData.time}
+                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
+                />
+              </FormControl>
+              <Button type="submit" colorScheme="blue" mr={3}>
+                {editBooking ? 'Update' : 'Create'}
+              </Button>
+              <Button onClick={onClose}>Cancel</Button>
+            </form>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </Box>
   );
 } 

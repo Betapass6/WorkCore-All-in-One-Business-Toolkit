@@ -65,8 +65,8 @@ router.post(
   }
 );
 
-// Get all bookings (Admin only)
-router.get('/', requireRole(Role.ADMIN), async (req: Request, res: Response) => {
+// Admin: get all bookings
+router.get('/admin', requireRole(Role.ADMIN), async (req: Request, res: Response) => {
   try {
     const bookings = await prisma.booking.findMany({
       include: { service: true, user: { select: { id: true, name: true, email: true } } },
@@ -76,6 +76,36 @@ router.get('/', requireRole(Role.ADMIN), async (req: Request, res: Response) => 
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error fetching bookings' });
+  }
+});
+
+// Staff: get all bookings (staff only, see only their own or all if needed)
+router.get('/staff', requireRole(Role.STAFF), async (req: Request, res: Response) => {
+  try {
+    const bookings = await prisma.booking.findMany({
+      include: { service: true, user: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(bookings);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching bookings' });
+  }
+});
+
+// User: get all bookings (user only, only their own)
+router.get('/user', requireRole(Role.USER), async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const bookings = await prisma.booking.findMany({
+      where: { userId },
+      include: { service: true },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json(bookings);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching client bookings' });
   }
 });
 
@@ -132,4 +162,4 @@ router.get('/my-bookings', async (req: Request, res: Response) => {
   }
 });
 
-export const bookingRouter = router; 
+export const bookingRouter = router;

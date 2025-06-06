@@ -27,7 +27,7 @@ export function BookingPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
-  const { data: bookings, loading } = useFetch<Booking[]>({ url: '/booking' })
+  const { data: bookings, loading } = useFetch<Booking[]>({ url: import.meta.env.VITE_API_URL + '/api/bookings' })
   const [loadingForm, setLoadingForm] = useState(false)
   const [formData, setFormData] = useState({
     serviceId: '',

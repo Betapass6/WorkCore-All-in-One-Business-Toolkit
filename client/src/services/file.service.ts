@@ -13,7 +13,7 @@ export interface File {
   }
 }
 
-const fileService = {
+class FileService {
   async uploadFile(file: Blob, fileName: string) {
     const formData = new FormData()
     formData.append('file', file, fileName)
@@ -24,20 +24,19 @@ const fileService = {
       },
     })
     return response.data
-  },
+  }
 
-  async getFiles(params?: { page?: number; limit?: number }) {
-    const response = await api.get('/files', { params })
-    return response.data
-  },
+  async getFiles(role: string) {
+    return api.get(`/files/${role.toLowerCase()}`)
+  }
 
   async deleteFile(id: string) {
     await api.delete(`/files/${id}`)
-  },
+  }
 
   getDownloadUrl(uuid: string) {
     return `${api.defaults.baseURL}/files/${uuid}`
   }
 }
 
-export default fileService 
+export default new FileService()

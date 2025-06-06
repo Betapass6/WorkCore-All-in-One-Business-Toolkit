@@ -1,16 +1,48 @@
-import { useState } from 'react'
-import { Box, VStack, Heading, Select, HStack, Spinner, Button } from '@chakra-ui/react'
+import { useState, useEffect } from 'react'
+import { Box, VStack, Heading, Select, HStack, Spinner, Button, SimpleGrid, Card, CardBody, Text, useToast } from '@chakra-ui/react'
 import { DownloadIcon } from '@chakra-ui/icons'
 import { useFetch } from '../hooks/useFetch'
 import { FeedbackForm } from '../components/FeedbackForm'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 import { Feedback as FeedbackType, Service } from '../types'
+import dashboardService from '../services/dashboard.service'
+import { DashboardStats } from '../types/dashboard'
+import { useAuth } from '../hooks/useAuth'
 
 export default function FeedbackPage() {
   const [selectedService, setSelectedService] = useState('')
   const [selectedRating, setSelectedRating] = useState('')
-  const { data: feedback, loading } = useFetch<FeedbackType[]>({ url: '/api/feedback' })
-  const { data: services } = useFetch<Service[]>({ url: '/api/services' })
+  const { data: feedback, loading } = useFetch<FeedbackType[]>({ url: import.meta.env.VITE_API_URL + '/api/feedback' })
+  const { data: services } = useFetch<Service[]>({ url: import.meta.env.VITE_API_URL + '/api/services' })
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loadingStats, setLoadingStats] = useState(true)
+  const toast = useToast()
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user?.role) {
+      fetchStats(user.role)
+    } else {
+      setLoadingStats(false)
+    }
+  }, [user])
+
+  const fetchStats = async (role: string) => {
+    try {
+      const data = await dashboardService.getStats(role)
+      setStats(data)
+    } catch (error) {
+      toast({
+        title: 'Failed to fetch stats',
+        description: 'There was an error loading the dashboard statistics',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      })
+    } finally {
+      setLoadingStats(false)
+    }
+  }
 
   const filteredFeedback = feedback?.filter(item => {
     if (selectedService && item.serviceId !== selectedService) return false
@@ -53,6 +85,39 @@ export default function FeedbackPage() {
     <DashboardLayout>
       <Box p={4}>
         <VStack spacing={8} align="stretch">
+          {!loadingStats && stats && (
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+              <Card>
+                <CardBody>
+                  <Text fontSize="sm" color="gray.600" mb={1}>
+                    Total Feedback
+                  </Text>
+                  <Text fontSize="2xl" fontWeight="bold">{stats.totalFeedback}</Text>
+                </CardBody>
+              </Card>
+              <Card>
+                <CardBody>
+                  <Text fontSize="sm" color="gray.600" mb={1}>
+                    My Feedback
+                  </Text>
+                  <Text fontSize="2xl" fontWeight="bold">{stats.myFeedback || 0}</Text>
+                </CardBody>
+              </Card>
+              <Card>
+                <CardBody>
+                  <Text fontSize="sm" color="gray.600" mb={1}>
+                    Average Rating
+                  </Text>
+                  <Text fontSize="2xl" fontWeight="bold">
+                    {feedback && feedback.length > 0
+                      ? (feedback.reduce((acc, curr) => acc + curr.rating, 0) / feedback.length).toFixed(1)
+                      : '0.0'}
+                  </Text>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+          )}
+
           <Box>
             <Heading size="md" mb={4}>
               Submit Feedback
@@ -98,6 +163,7 @@ export default function FeedbackPage() {
                 <option value="5">5 Stars</option>
               </Select>
             </HStack>
+            
             {filteredFeedback?.map((item) => (
               <Box key={item.id} p={4} borderWidth={1} borderRadius="md" mb={4}>
                 <Heading size="sm">{item.title}</Heading>

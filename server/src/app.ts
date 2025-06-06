@@ -21,6 +21,7 @@ import { apiLimiter } from './middleware/rate-limit.middleware';
 import { authenticate } from './middleware/auth.middleware';
 import morgan from 'morgan';
 import { initScheduler } from './utils/scheduler';
+import dashboardRouter from './routes/dashboard.routes';
 
 dotenv.config();
 
@@ -89,4 +90,4 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-export default app; 
+export default app;

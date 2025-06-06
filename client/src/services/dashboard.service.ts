@@ -1,17 +1,12 @@
-import axios from 'axios'
+import api from './api'
 import { DashboardStats } from '../types/dashboard'
-
-const API_URL = '/api/dashboard'
 
 class DashboardService {
   async getStats(role?: string): Promise<DashboardStats> {
-    const params = new URLSearchParams();
-    if (role) {
-      params.append('role', role);
-    }
-    const response = await axios.get(`${API_URL}?${params.toString()}`)
-    return response.data
+    const url = `/api/dashboard/${role?.toLowerCase()}`;
+    const response = await api.get(url);
+    return response.data;
   }
 }
 
-export default new DashboardService() 
+export default new DashboardService()

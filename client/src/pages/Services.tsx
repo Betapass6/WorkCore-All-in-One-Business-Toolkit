@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   Box,
   Button,
@@ -20,6 +20,10 @@ import {
   HStack,
   Input,
   IconButton,
+  SimpleGrid,
+  Card,
+  CardBody,
+  Text,
 } from '@chakra-ui/react'
 import { SearchIcon } from '@chakra-ui/icons'
 import { useFetch } from '../hooks/useFetch'
@@ -27,16 +31,47 @@ import { ServiceForm } from '../components/ServiceForm'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 import { Service } from '../types'
 import serviceService from '../services/service.service'
+import dashboardService from '../services/dashboard.service'
+import { DashboardStats } from '../types/dashboard'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Services() {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const [search, setSearch] = useState('')
-  const { data: services, loading } = useFetch<Service[]>({ url: '/api/services' })
+  const { data: services, loading } = useFetch<Service[]>({ url: import.meta.env.VITE_API_URL + '/api/services' })
   const [editService, setEditService] = useState<Service | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loadingStats, setLoadingStats] = useState(true)
   const toast = useToast()
   const cancelRef = useRef(null)
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user?.role) {
+      fetchStats(user.role)
+    } else {
+      setLoadingStats(false)
+    }
+  }, [user])
+
+  const fetchStats = async (role: string) => {
+    try {
+      const data = await dashboardService.getStats(role)
+      setStats(data)
+    } catch (error) {
+      toast({
+        title: 'Failed to fetch stats',
+        description: 'There was an error loading the dashboard statistics',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      })
+    } finally {
+      setLoadingStats(false)
+    }
+  }
 
   const handleEdit = (service: Service) => {
     setEditService(service)
@@ -83,6 +118,35 @@ export default function Services() {
   return (
     <DashboardLayout>
       <Box p={4}>
+        {!loadingStats && stats && (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6} mb={6}>
+            <Card>
+              <CardBody>
+                <Text fontSize="sm" color="gray.600" mb={1}>
+                  Total Services
+                </Text>
+                <Text fontSize="2xl" fontWeight="bold">{stats.totalServices}</Text>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <Text fontSize="sm" color="gray.600" mb={1}>
+                  Total Bookings
+                </Text>
+                <Text fontSize="2xl" fontWeight="bold">{stats.totalBookings}</Text>
+              </CardBody>
+            </Card>
+            <Card>
+              <CardBody>
+                <Text fontSize="sm" color="gray.600" mb={1}>
+                  Total Revenue
+                </Text>
+                <Text fontSize="2xl" fontWeight="bold">${stats.totalRevenue}</Text>
+              </CardBody>
+            </Card>
+          </SimpleGrid>
+        )}
+
         <HStack mb={4} spacing={4}>
           <Button onClick={() => { setEditService(null); onOpen() }}>
             Add Service
@@ -132,7 +196,7 @@ export default function Services() {
           </Tbody>
         </Table>
 
-        <ServiceForm 
+        <ServiceForm
           isOpen={isOpen} 
           onClose={onClose} 
           initialData={editService ? {

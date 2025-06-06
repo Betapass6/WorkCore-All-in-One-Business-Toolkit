@@ -6,38 +6,6 @@ import { requireRole } from '../middleware/auth.middleware';
 const router = Router();
 const prisma = new PrismaClient();
 
-// Get dashboard stats
-router.get('/dashboard', authenticate, requireRole(['ADMIN']), async (req, res) => {
-  try {
-    const [
-      totalUsers,
-      totalProducts,
-      totalBookings,
-      totalFiles,
-      totalFeedback
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.product.count(),
-      prisma.booking.count(),
-      prisma.file.count(),
-      prisma.feedback.count()
-    ]);
-
-    res.json({
-      stats: {
-        totalUsers,
-        totalProducts,
-        totalBookings,
-        totalFiles,
-        totalFeedback
-      }
-    });
-  } catch (error) {
-    console.error('Dashboard stats error:', error);
-    res.status(500).json({ message: 'Error fetching dashboard stats' });
-  }
-});
-
 // Get all users
 router.get('/users', authenticate, requireRole(['ADMIN']), async (req, res) => {
   try {
@@ -103,4 +71,4 @@ router.delete('/users/:id', authenticate, requireRole(['ADMIN']), async (req, re
   }
 });
 
-export default router; 
+export default router;

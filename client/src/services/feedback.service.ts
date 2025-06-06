@@ -21,7 +21,7 @@ export interface CreateFeedbackData {
   serviceId?: string
 }
 
-const feedbackService = {
+class FeedbackService {
   async getFeedbacks(params?: { 
     productId?: string
     serviceId?: string
@@ -31,17 +31,21 @@ const feedbackService = {
   }) {
     const response = await api.get('/feedback', { params })
     return response.data
-  },
+  }
 
   async createFeedback(data: CreateFeedbackData) {
     const response = await api.post('/feedback', data)
     return response.data
-  },
+  }
 
   async getFeedback(id: string) {
     const response = await api.get(`/feedback/${id}`)
     return response.data
   }
+
+  async getFeedbackByRole(role: string) {
+    return api.get(`/feedback/${role.toLowerCase()}`)
+  }
 }
 
-export default feedbackService 
+export default new FeedbackService()

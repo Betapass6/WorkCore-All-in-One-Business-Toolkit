@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Product, ProductFilters, ProductResponse } from '../types/product';
 
-const API_URL = '/api/products';
+const API_URL = import.meta.env.VITE_API_URL + '/api/products';
 
 class ProductService {
   async getProducts(filters: ProductFilters = {}): Promise<ProductResponse> {
@@ -38,6 +38,11 @@ class ProductService {
     const response = await axios.get(`${API_URL}/categories`);
     return response.data;
   }
+
+  async getProductsByRole(role: string) {
+    const response = await axios.get(`${API_URL}/${role.toLowerCase()}`);
+    return response.data;
+  }
 }
 
-export default new ProductService(); 
+export default new ProductService();

@@ -52,4 +52,4 @@ const serviceService = {
   }
 };
 
-export default serviceService; 
+export default serviceService;

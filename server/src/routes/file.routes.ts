@@ -20,4 +20,22 @@ router.get('/download/:uuid', fileController.download);
 // Delete file
 router.delete('/:id', authenticate, fileController.delete);
 
-export default router; 
+// Admin: get all files
+router.get('/admin', authenticate, (req, res) => {
+  if (req.user?.role !== 'ADMIN') return res.status(403).json({ message: 'Forbidden' });
+  // ...fetch all files logic...
+});
+
+// Staff: get all files (staff only, see all or only their own as needed)
+router.get('/staff', authenticate, (req, res) => {
+  if (req.user?.role !== 'STAFF') return res.status(403).json({ message: 'Forbidden' });
+  // ...fetch files logic for staff...
+});
+
+// User: get all files (user only, only their own)
+router.get('/user', authenticate, (req, res) => {
+  if (req.user?.role !== 'USER') return res.status(403).json({ message: 'Forbidden' });
+  // ...fetch files logic for user...
+});
+
+export default router;

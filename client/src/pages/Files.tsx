@@ -1,13 +1,45 @@
-import { Box, VStack, Heading, Button, HStack, Spinner, useToast } from '@chakra-ui/react'
+import { Box, VStack, Heading, Button, HStack, Spinner, useToast, SimpleGrid, Card, CardBody, Text } from '@chakra-ui/react'
 import { useFetch } from '../hooks/useFetch'
 import { FileUploader } from '../components/FileUploader'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 import { File } from '../types'
 import fileService from '../services/file.service'
+import dashboardService from '../services/dashboard.service'
+import { DashboardStats } from '../types/dashboard'
+import { useAuth } from '../hooks/useAuth'
+import { useEffect, useState } from 'react'
 
 export default function Files() {
-  const { data: files, loading } = useFetch<File[]>({ url: '/api/files' })
+  const { data: files, loading } = useFetch<File[]>({ url: import.meta.env.VITE_API_URL + '/api/files' })
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [loadingStats, setLoadingStats] = useState(true)
   const toast = useToast()
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user?.role) {
+      fetchStats(user.role)
+    } else {
+      setLoadingStats(false)
+    }
+  }, [user])
+
+  const fetchStats = async (role: string) => {
+    try {
+      const data = await dashboardService.getStats(role)
+      setStats(data)
+    } catch (error) {
+      toast({
+        title: 'Failed to fetch stats',
+        description: 'There was an error loading the dashboard statistics',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      })
+    } finally {
+      setLoadingStats(false)
+    }
+  }
 
   const handleDownload = (uuid: string) => {
     const url = fileService.getDownloadUrl(uuid)
@@ -41,6 +73,35 @@ export default function Files() {
     <DashboardLayout>
       <Box p={4}>
         <VStack spacing={8} align="stretch">
+          {!loadingStats && stats && (
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+              <Card>
+                <CardBody>
+                  <Text fontSize="sm" color="gray.600" mb={1}>
+                    Total Files
+                  </Text>
+                  <Text fontSize="2xl" fontWeight="bold">{stats.totalFiles}</Text>
+                </CardBody>
+              </Card>
+              <Card>
+                <CardBody>
+                  <Text fontSize="sm" color="gray.600" mb={1}>
+                    My Files
+                  </Text>
+                  <Text fontSize="2xl" fontWeight="bold">{stats.myFiles || 0}</Text>
+                </CardBody>
+              </Card>
+              <Card>
+                <CardBody>
+                  <Text fontSize="sm" color="gray.600" mb={1}>
+                    Total Storage Used
+                  </Text>
+                  <Text fontSize="2xl" fontWeight="bold">{stats.totalFiles * 10}MB</Text>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+          )}
+
           <Box>
             <Heading size="md" mb={4}>
               Upload File

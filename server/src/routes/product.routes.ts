@@ -72,6 +72,78 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// Admin: get all products (admin only)
+router.get('/admin', requireRole(Role.ADMIN), async (req: Request, res: Response) => {
+  // identical to router.get('/') but admin only
+  try {
+    const { search, skip, take } = req.query;
+    const products = await prisma.product.findMany({
+      where: {
+        OR: [
+          { name: { contains: search as string, mode: 'insensitive' } },
+          { description: { contains: search as string, mode: 'insensitive' } },
+          { category: { contains: search as string, mode: 'insensitive' } },
+        ],
+      },
+      include: { supplier: true },
+      skip: skip ? parseInt(skip as string) : undefined,
+      take: take ? parseInt(take as string) : undefined,
+    });
+    res.json(products);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching products' });
+  }
+});
+
+// Staff: get all products (staff only)
+router.get('/staff', requireRole(Role.STAFF), async (req: Request, res: Response) => {
+  // identical to router.get('/') but staff only
+  try {
+    const { search, skip, take } = req.query;
+    const products = await prisma.product.findMany({
+      where: {
+        OR: [
+          { name: { contains: search as string, mode: 'insensitive' } },
+          { description: { contains: search as string, mode: 'insensitive' } },
+          { category: { contains: search as string, mode: 'insensitive' } },
+        ],
+      },
+      include: { supplier: true },
+      skip: skip ? parseInt(skip as string) : undefined,
+      take: take ? parseInt(take as string) : undefined,
+    });
+    res.json(products);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching products' });
+  }
+});
+
+// User: get all products (user only)
+router.get('/user', requireRole(Role.USER), async (req: Request, res: Response) => {
+  // identical to router.get('/') but user only
+  try {
+    const { search, skip, take } = req.query;
+    const products = await prisma.product.findMany({
+      where: {
+        OR: [
+          { name: { contains: search as string, mode: 'insensitive' } },
+          { description: { contains: search as string, mode: 'insensitive' } },
+          { category: { contains: search as string, mode: 'insensitive' } },
+        ],
+      },
+      include: { supplier: true },
+      skip: skip ? parseInt(skip as string) : undefined,
+      take: take ? parseInt(take as string) : undefined,
+    });
+    res.json(products);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching products' });
+  }
+});
+
 // Get a single product by ID (Client, Staff, Admin) - Requires authentication
 router.get('/:id', async (req: Request, res: Response) => {
   try {
@@ -151,4 +223,4 @@ router.delete('/:id', requireRole(Role.ADMIN), async (req: Request, res: Respons
   }
 });
 
-export const productRouter = router; 
+export const productRouter = router;
