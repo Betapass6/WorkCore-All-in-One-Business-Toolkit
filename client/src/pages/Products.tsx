@@ -27,7 +27,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import productService from '../services/product.service';
-import { Product, ProductFilters } from '../types/product';
+import { Product } from '../types/product';
 import { toast } from 'react-toastify';
 
 const Products = () => {
@@ -85,7 +85,7 @@ const Products = () => {
     setPage(1);
   };
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = ( _event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
 
@@ -231,7 +231,7 @@ const Products = () => {
                   cursor: 'pointer',
                 },
               }}
-              onClick={() => navigate(`/products/${product.id}`)}
+              onClick={() => navigate(`/products/${product.id}/${user?.role.toLowerCase()}`)}
             >
               <CardContent>
                 <Typography variant="h6" component="h2" gutterBottom>

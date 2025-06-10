@@ -1,55 +1,36 @@
-import axios from 'axios';
+import api from './api';
+import { Service } from '../types'; // Import the Service interface from the types directory
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_BASE = '/api/services'; // Base path for service API
 
-console.log('API_URL resolved to:', API_URL);
+// Define types that exactly match what ServiceForm sends
+export type CreateServiceData = Omit<Service, 'id' | 'createdAt' | 'updatedAt'>;
+export type UpdateServiceData = Partial<CreateServiceData>; // All fields optional for update
 
-export interface Service {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const serviceService = {
-  async getAllServices(): Promise<Service[]> {
-    const response = await axios.get(`${API_URL}/services`);
+class ServiceService {
+  async getServices(): Promise<Service[]> {
+    const response = await api.get(API_BASE);
     return response.data;
-  },
+  }
 
-  async getServiceById(id: string): Promise<Service> {
-    const response = await axios.get(`${API_URL}/services/${id}`);
+  async getService(id: string): Promise<Service> {
+    const response = await api.get(`${API_BASE}/${id}`);
     return response.data;
-  },
+  }
 
-  async createService(service: Omit<Service, 'id' | 'createdAt' | 'updatedAt'>): Promise<Service> {
-    const response = await axios.post(`${API_URL}/services`, service, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
+  async createService(data: CreateServiceData): Promise<Service> {
+    const response = await api.post(API_BASE, data);
     return response.data;
-  },
+  }
 
-  async updateService(id: string, service: Partial<Service>): Promise<Service> {
-    const response = await axios.put(`${API_URL}/services/${id}`, service, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
+  async updateService(id: string, data: UpdateServiceData): Promise<Service> {
+    const response = await api.put(`${API_BASE}/${id}`, data);
     return response.data;
-  },
+  }
 
   async deleteService(id: string): Promise<void> {
-    await axios.delete(`${API_URL}/services/${id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      }
-    });
+    await api.delete(`${API_BASE}/${id}`);
   }
-};
+}
 
-export default serviceService;
+export default new ServiceService();

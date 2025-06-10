@@ -1,7 +1,7 @@
-import axios from 'axios';
+import api from './api'; // Import the centralized API instance
 import { User } from '../types/user';
 
-const API_URL = import.meta.env.VITE_API_URL + '/api/auth';
+const API_BASE = '/auth'; // Base path for auth API
 
 export interface LoginData {
   email: string;
@@ -26,14 +26,14 @@ export interface AuthResponse {
 
 class AuthService {
   async login(email: string, password: string): Promise<User> {
-    const response = await axios.post(`${API_URL}/login`, { email, password });
+    const response = await api.post(`${API_BASE}/login`, { email, password });
     const { user, token } = response.data;
     localStorage.setItem('token', token);
     return user;
   }
 
   async register(name: string, email: string, password: string): Promise<User> {
-    const response = await axios.post(`${API_URL}/register`, {
+    const response = await api.post(`${API_BASE}/register`, {
       name,
       email,
       password,
@@ -56,9 +56,7 @@ class AuthService {
     if (!token) return null;
 
     try {
-      const response = await axios.get(`${API_URL}/me`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get(`${API_BASE}/me`); // No need for manual headers, interceptor handles it
       return response.data;
     } catch (error) {
       console.error('Failed to get current user:', error);

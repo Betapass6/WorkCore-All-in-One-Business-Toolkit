@@ -17,7 +17,7 @@ import { Role } from '@prisma/client';
 import swaggerUi from 'swagger-ui-express';
 import { specs } from './utils/swagger';
 import { requestLogger } from './middleware/logger.middleware';
-import { apiLimiter } from './middleware/rate-limit.middleware';
+import { apiLimiter, authApiLimiter, sensitiveApiLimiter } from './middleware/rate-limit.middleware';
 import { authenticate } from './middleware/auth.middleware';
 import morgan from 'morgan';
 import { initScheduler } from './utils/scheduler';
@@ -30,12 +30,18 @@ const app = express();
 // Initialize scheduler
 initScheduler();
 
-// Middleware
+// Apply rate limiters
+app.use('/api/auth', sensitiveApiLimiter); // Stricter limits for auth routes
+app.use('/api/feedback', authApiLimiter); // More lenient for authenticated users
+app.use('/api/bookings', authApiLimiter);
+app.use('/api/services', authApiLimiter);
+app.use('/api', apiLimiter); // Default limiter for all other routes
+
+// Apply middleware
 app.use(cors());
 app.use(express.json());
-app.use(requestLogger);
-app.use(apiLimiter);
 app.use(morgan('dev'));
+app.use(requestLogger);
 
 // Custom logging middleware before public routes
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -43,10 +49,15 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
+// Temporary test route
+app.get('/test', (req: Request, res: Response) => {
+  res.send('Test route works!');
+});
+
 // Public Routes (no auth required)
-app.use('/api/auth', authRouter);
-app.use('/api/files', fileRouter); // Allow public access to file download by UUID
-app.use('/api/services', serviceRouter); // Allow public access to view services
+app.use('/auth', authRouter);
+app.use('/files', fileRouter); // Allow public access to file download by UUID
+app.use('/services', serviceRouter); // Allow public access to view services
 
 // Apply authMiddleware to all routes below this line that require authentication
 app.use(authMiddleware);
@@ -63,7 +74,7 @@ app.use('/api/files', fileRouter);
 app.use('/api/suppliers', supplierRouter); // Client/Staff can view suppliers (needed for product relation)
 
 // User routes (requires authentication)
-app.use('/api/user', userRouter);
+app.use('/api/users', userRouter);
 
 // Admin routes requiring ADMIN role
 app.use('/api/admin', requireRole(Role.ADMIN), adminRouter); // Dashboard stats route
@@ -80,6 +91,10 @@ app.use('/api/admin', requireRole(Role.ADMIN), adminRouter); // Dashboard stats 
 
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
+
+// Routes
+app.use('/api/services', serviceRouter);
+app.use('/api/dashboard', dashboardRouter);
 
 // Error handling
 app.use(errorHandler);

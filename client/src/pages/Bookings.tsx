@@ -28,9 +28,9 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
-import { useFetch } from '../hooks/useFetch';
+import { useFetch, UseFetchResult } from '../hooks/useFetch';
 import { Booking, Service } from '../types';
-import bookingService, { Booking as BookingType } from '../services/booking.service';
+import bookingService from '../services/booking.service';
 import dashboardService from '../services/dashboard.service';
 import { DashboardStats } from '../types/dashboard';
 import { useAuth } from '../hooks/useAuth';
@@ -40,20 +40,21 @@ type SortOrder = 'asc' | 'desc';
 
 export default function Bookings() {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const { data: bookings, loading } = useFetch<Booking[]>({ url: import.meta.env.VITE_API_URL + '/api/bookings' });
-  const { data: services } = useFetch<Service[]>({ url: import.meta.env.VITE_API_URL + '/api/services' });
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [formData, setFormData] = useState({
     serviceId: '',
     date: '',
     time: '',
   });
-  const [editBooking, setEditBooking] = useState<Booking | null>(null);
   const [sortField, setSortField] = useState<SortField>('date');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const toast = useToast();
   const { user } = useAuth();
+
+  const { data: bookings, loading: bookingsLoading, refetch: refetchBookings }: UseFetchResult<Booking[]> = useFetch<Booking[]>({ url: `/api/bookings/my-bookings` });
+  const { data: services, loading: servicesLoading } = useFetch<Service[]>({ url: `/api/services` });
 
   useEffect(() => {
     if (user?.role) {
@@ -117,8 +118,8 @@ export default function Bookings() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      if (editBooking) {
-        await bookingService.updateBookingStatus(editBooking.id, 'PENDING');
+      if (selectedBooking) {
+        await bookingService.updateBookingStatus(selectedBooking.id, 'PENDING');
         toast({
           title: 'Success',
           description: 'Booking updated successfully',
@@ -135,9 +136,9 @@ export default function Bookings() {
         });
       }
       onClose();
-      setEditBooking(null);
+      setSelectedBooking(null);
       // Refresh the data
-      window.location.reload();
+      refetchBookings();
     } catch (error) {
       toast({
         title: 'Error',
@@ -149,7 +150,7 @@ export default function Bookings() {
   };
 
   const handleEdit = (booking: Booking) => {
-    setEditBooking(booking);
+    setSelectedBooking(booking);
     setFormData({
       serviceId: booking.service.id,
       date: booking.date,
@@ -158,7 +159,7 @@ export default function Bookings() {
     onOpen();
   };
 
-  const handleStatusChange = async (bookingId: string, status: BookingType['status']) => {
+  const handleStatusChange = async (bookingId: string, status: Booking['status']) => {
     try {
       await bookingService.updateBookingStatus(bookingId, status);
       toast({
@@ -168,7 +169,7 @@ export default function Bookings() {
         duration: 3000,
       });
       // Refresh the data
-      window.location.reload();
+      refetchBookings();
     } catch (error) {
       toast({
         title: 'Error',
@@ -179,7 +180,7 @@ export default function Bookings() {
     }
   };
 
-  if (loading) return <Spinner />;
+  if (bookingsLoading || servicesLoading) return <Spinner />;
 
   return (
     <Box p={4}>
@@ -212,7 +213,7 @@ export default function Bookings() {
         </SimpleGrid>
       )}
 
-      <Button onClick={() => { setEditBooking(null); setFormData({ serviceId: '', date: '', time: '' }); onOpen(); }} mb={4}>
+      <Button onClick={() => { setSelectedBooking(null); setFormData({ serviceId: '', date: '', time: '' }); onOpen(); }} mb={4}>
         New Booking
       </Button>
 
@@ -292,7 +293,7 @@ export default function Bookings() {
               <Td>
                 <Select
                   value={booking.status}
-                  onChange={(e) => handleStatusChange(booking.id, e.target.value as BookingType['status'])}
+                  onChange={(e) => handleStatusChange(booking.id, e.target.value as Booking['status'])}
                 >
                   <option value="PENDING">Pending</option>
                   <option value="CONFIRMED">Confirmed</option>
@@ -312,7 +313,7 @@ export default function Bookings() {
       <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>{editBooking ? 'Edit Booking' : 'New Booking'}</ModalHeader>
+          <ModalHeader>{selectedBooking ? 'Edit Booking' : 'New Booking'}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <form onSubmit={handleSubmit}>
@@ -347,7 +348,7 @@ export default function Bookings() {
                 />
               </FormControl>
               <Button type="submit" colorScheme="blue" mr={3}>
-                {editBooking ? 'Update' : 'Create'}
+                {selectedBooking ? 'Update' : 'Create'}
               </Button>
               <Button onClick={onClose}>Cancel</Button>
             </form>

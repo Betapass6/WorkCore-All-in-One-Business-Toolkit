@@ -16,6 +16,7 @@ interface AuthContextType {
   loading: boolean
   isAdmin: boolean
   isStaff: boolean
+  token: string | null;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -23,6 +24,7 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth()
@@ -32,8 +34,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const userData = await authService.getCurrentUser()
       setUser(userData)
+      const storedToken = localStorage.getItem('token');
+      setToken(storedToken);
     } catch (error) {
       setUser(null)
+      setToken(null);
     } finally {
       setLoading(false)
     }
@@ -42,11 +47,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     const userData = await authService.login(email, password)
     setUser(userData)
+    const storedToken = localStorage.getItem('token');
+    setToken(storedToken);
   }
 
   const logout = () => {
     authService.logout()
     setUser(null)
+    setToken(null);
   }
 
   const isAdmin = user?.role === 'ADMIN'
@@ -62,6 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         isAdmin,
         isStaff,
+        token,
       }}
     >
       {children}

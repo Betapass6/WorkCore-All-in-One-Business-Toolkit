@@ -1,20 +1,11 @@
 import api from './api'
+import { Booking } from '../types'
 
 export interface Service {
   id: string
   name: string
   price: number
   duration: number
-}
-
-export interface Booking {
-  id: string
-  userId: string
-  serviceId: string
-  date: string
-  time: string
-  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED'
-  service: Service
 }
 
 export interface CreateBookingData {
@@ -25,29 +16,39 @@ export interface CreateBookingData {
 
 class BookingService {
   async getBookings(role: string) {
-    return api.get(`/bookings/${role.toLowerCase()}`)
+    return api.get(`/api/bookings/${role.toLowerCase()}`)
   }
 
   async createBooking(data: CreateBookingData) {
-    const response = await api.post('/bookings', data)
+    const response = await api.post('/api/bookings', data)
     return response.data
   }
 
   async updateBookingStatus(id: string, status: Booking['status']) {
-    const response = await api.put(`/bookings/${id}`, { status })
+    const response = await api.put(`/api/bookings/${id}`, { status })
     return response.data
   }
 
   async getServices() {
-    const response = await api.get('/services')
+    const response = await api.get('/api/services')
     return response.data
   }
 
   async checkAvailability(serviceId: string, date: string, time: string) {
-    const response = await api.get('/bookings/availability', {
+    const response = await api.get('/api/bookings/availability', {
       params: { serviceId, date, time }
     })
     return response.data
+  }
+
+  async create(booking: Omit<Booking, 'id'>) {
+    const { data } = await api.post<Booking>('/api/bookings', booking)
+    return data
+  }
+
+  async updateStatus(id: string, status: Booking['status']) {
+    const { data } = await api.put<Booking>(`/api/bookings/${id}`, { status })
+    return data
   }
 }
 

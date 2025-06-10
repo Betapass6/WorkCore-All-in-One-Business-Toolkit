@@ -21,13 +21,14 @@ import { useFetch } from '../hooks/useFetch'
 import { Booking } from '../types'
 import bookingService from '../services/booking.service'
 import { useAuth } from '../hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 export function BookingPage() {
-  const { user } = useAuth()
+  const { id } = useParams()
   const navigate = useNavigate()
   const toast = useToast()
-  const { data: bookings, loading } = useFetch<Booking[]>({ url: import.meta.env.VITE_API_URL + '/api/bookings' })
+  const { user } = useAuth()
+  const { data: bookings, loading } = useFetch<Booking[]>({ url: `/api/bookings/${id}` })
   const [loadingForm, setLoadingForm] = useState(false)
   const [formData, setFormData] = useState({
     serviceId: '',
@@ -107,9 +108,9 @@ export function BookingPage() {
               <Td>
                 <Badge
                   colorScheme={
-                    booking.status === 'confirmed'
+                    booking.status === 'CONFIRMED'
                       ? 'green'
-                      : booking.status === 'cancelled'
+                      : booking.status === 'CANCELLED'
                       ? 'red'
                       : 'yellow'
                   }
@@ -124,9 +125,9 @@ export function BookingPage() {
                   size="sm"
                   width="150px"
                 >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
-                  <option value="cancelled">Cancelled</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="CONFIRMED">Confirmed</option>
+                  <option value="CANCELLED">Cancelled</option>
                 </Select>
               </Td>
             </Tr>

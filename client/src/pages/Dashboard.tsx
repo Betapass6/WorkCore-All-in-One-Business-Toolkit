@@ -142,21 +142,21 @@ const Dashboard = () => {
               <Button
                 leftIcon={<AddIcon />}
                 colorScheme="blue"
-                onClick={() => navigate('/products/new')}
+                onClick={() => navigate(`/products/new`)}
               >
                 Add Product
               </Button>
               <Button
                 leftIcon={<AddIcon />}
                 colorScheme="blue"
-                onClick={() => navigate('/services/new')}
+                onClick={() => navigate(`/services/new`)}
               >
                 Add Service
               </Button>
               <Button
                 leftIcon={<AddIcon />}
                 colorScheme="blue"
-                onClick={() => navigate('/bookings/new')}
+                onClick={() => navigate(`/bookings/new`)}
               >
                 New Booking
               </Button>

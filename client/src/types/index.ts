@@ -27,6 +27,8 @@ export interface Service {
   description: string
   price: number
   duration: number
+  createdAt: string
+  updatedAt: string
 }
 
 export interface Booking {
@@ -39,7 +41,7 @@ export interface Booking {
     name: string
     email: string
   }
-  status: 'pending' | 'confirmed' | 'cancelled'
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED'
 }
 
 export interface Feedback {

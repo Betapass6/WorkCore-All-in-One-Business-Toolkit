@@ -87,6 +87,32 @@ router.post(
   }
 );
 
+// Get all feedbacks for authenticated user (Client, Staff, Admin)
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.userId;
+    const userRole = req.user!.role;
+
+    let feedbacks;
+    if (userRole === Role.ADMIN) {
+      feedbacks = await prisma.feedback.findMany({
+        include: { user: { select: { id: true, name: true, email: true } }, service: true, product: true },
+        orderBy: { createdAt: 'desc' },
+      });
+    } else {
+      feedbacks = await prisma.feedback.findMany({
+        where: { userId },
+        include: { user: { select: { id: true, name: true, email: true } }, service: true, product: true },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+    res.json(feedbacks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching user feedbacks' });
+  }
+});
+
 // Admin: get all feedback
 router.get('/admin', (req: Request, res: Response) => {
   if (req.user?.role !== Role.ADMIN) {

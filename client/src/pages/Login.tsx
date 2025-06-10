@@ -40,11 +40,11 @@ export default function Login() {
       
       // Redirect based on user role
       if (user?.role === 'ADMIN') {
-        navigate('/admin/dashboard');
+        navigate('/dashboard/admin');
       } else if (user?.role === 'STAFF') {
-        navigate('/staff/dashboard');
+        navigate('/dashboard/staff');
       } else {
-        navigate('/user/dashboard');
+        navigate('/dashboard/user');
       }
     } catch (error) {
       toast({
