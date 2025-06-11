@@ -16,8 +16,12 @@ import {
   Chip,
   Pagination,
   useTheme,
-  Grid as MuiGrid,
+  CircularProgress,
 } from '@mui/material';
+import {
+  Grid,
+  SimpleGrid
+} from '@chakra-ui/react';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -50,11 +54,33 @@ const Products = () => {
     category: '',
     supplierId: '',
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        fetchProducts(),
+        fetchCategories()
+      ]);
+      setIsLoading(false);
+    };
+    loadData();
   }, [page, search, category]);
+
+  useEffect(() => {
+    console.log('Products data in render:', products);
+  }, [products]);
+
+  useEffect(() => {
+    console.log('Categories data in dialog:', categories);
+  }, [categories]);
+
+  useEffect(() => {
+    console.log('Current products state before render:', products);
+    console.log('Current categories state before render:', categories);
+    console.log('Current isLoading state before render:', isLoading);
+  }, [products, categories, isLoading]);
 
   const fetchProducts = async () => {
     try {
@@ -64,19 +90,22 @@ const Products = () => {
         page,
         limit: 12,
       });
-      setProducts(response.products);
-      setTotalPages(Math.ceil(response.total / 12));
+      setProducts(response.products || []);
+      setTotalPages(Math.ceil((response.total || 0) / 12));
     } catch (error) {
       toast.error('Failed to fetch products');
+      setProducts([]);
+      setTotalPages(1);
     }
   };
 
   const fetchCategories = async () => {
     try {
       const data = await productService.getCategories();
-      setCategories(data);
+      setCategories(data || []);
     } catch (error) {
       toast.error('Failed to fetch categories');
+      setCategories([]);
     }
   };
 
@@ -88,6 +117,14 @@ const Products = () => {
   const handlePageChange = ( _event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
   };
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   const handleOpenDialog = (product?: Product) => {
     if (product) {
@@ -148,7 +185,12 @@ const Products = () => {
       }
 
       handleCloseDialog();
-      fetchProducts();
+      setIsLoading(true);
+      await Promise.all([
+        fetchProducts(),
+        fetchCategories()
+      ]);
+      setIsLoading(false);
     } catch (error) {
       toast.error(selectedProduct ? 'Failed to update product' : 'Failed to create product');
     }
@@ -159,7 +201,12 @@ const Products = () => {
       try {
         await productService.deleteProduct(id);
         toast.success('Product deleted successfully');
-        fetchProducts();
+        setIsLoading(true);
+        await Promise.all([
+          fetchProducts(),
+          fetchCategories()
+        ]);
+        setIsLoading(false);
       } catch (error) {
         toast.error('Failed to delete product');
       }
@@ -187,8 +234,8 @@ const Products = () => {
       </Box>
 
       <Box sx={{ mb: 3 }}>
-        <MuiGrid container spacing={2}>
-          <MuiGrid item component="div" xs={12} sm={6}>
+        <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }} gap={2}>
+          <Box>
             <TextField
               fullWidth
               label="Search"
@@ -198,8 +245,8 @@ const Products = () => {
                 startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
               }}
             />
-          </MuiGrid>
-          <MuiGrid item component="div" xs={12} sm={6}>
+          </Box>
+          <Box>
             <TextField
               fullWidth
               select
@@ -208,79 +255,78 @@ const Products = () => {
               onChange={(e) => setCategory(e.target.value)}
             >
               <MenuItem value="">All Categories</MenuItem>
-              {categories.map((category) => (
-                <MenuItem key={category} value={category}>
-                  {category}
-                </MenuItem>
-              ))}
+              {Array.isArray(categories) && categories.length > 0 ? (
+                categories.map((category) => (
+                  <MenuItem key={category} value={category}>
+                    {category}
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem value="" disabled>No categories available</MenuItem>
+              )}
             </TextField>
-          </MuiGrid>
-        </MuiGrid>
+          </Box>
+        </Grid>
       </Box>
 
-      <MuiGrid container spacing={3}>
-        {products.map((product) => (
-          <MuiGrid item component="div" key={product.id} xs={12} sm={6} md={4}>
-            <Card
-              sx={{
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column',
-                '&:hover': {
-                  boxShadow: theme.shadows[4],
-                  cursor: 'pointer',
-                },
-              }}
-              onClick={() => navigate(`/products/${product.id}/${user?.role.toLowerCase()}`)}
-            >
-              <CardContent>
-                <Typography variant="h6" component="h2" gutterBottom>
-                  {product.name}
-                </Typography>
-                <Typography color="text.secondary" gutterBottom>
-                  {product.category}
-                </Typography>
-                <Typography variant="h6" color="primary" gutterBottom>
-                  ${product.price.toFixed(2)}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <Rating value={product.feedbacks?.[0]?.rating || 0} readOnly size="small" />
-                  <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                    ({product.feedbacks?.length || 0} reviews)
-                  </Typography>
-                </Box>
-                <Chip
-                  label={`Stock: ${product.stock}`}
-                  color={product.stock > 0 ? 'success' : 'error'}
-                  size="small"
-                />
-                {(isAdmin || isStaff) && (
-                  <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenDialog(product);
-                      }}
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(product.id);
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                )}
-              </CardContent>
-            </Card>
-          </MuiGrid>
-        ))}
-      </MuiGrid>
+      <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={3}>
+        {Array.isArray(products) && products.length > 0 ? (
+          products.map((product) => {
+            // console.log('Rendering product:', product); // Debugging line
+            return (
+              <Box key={product.id}>
+                <Card
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:hover': {
+                      boxShadow: theme.shadows[4],
+                      cursor: 'pointer',
+                    },
+                  }}
+                  onClick={() => navigate(`/products/${product.id}/${user?.role.toLowerCase()}`)}
+                >
+                  <CardContent>
+                    <Typography variant="h6" component="h2" gutterBottom>
+                      {product.name}
+                    </Typography>
+                    <Typography color="text.secondary" gutterBottom>
+                      {product.category}
+                    </Typography>
+                    <Typography variant="h6" color="primary" gutterBottom>
+                      ${product.price.toFixed(2)}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Rating value={product.feedbacks?.[0]?.rating || 0} readOnly size="small" />
+                      <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                        ({product.feedbacks?.length || 0} reviews)
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Stock: {product.stock}
+                    </Typography>
+                  </CardContent>
+                  {(isAdmin || isStaff) && (
+                    <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                      <IconButton onClick={(e) => { e.stopPropagation(); handleOpenDialog(product); }}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={(e) => { e.stopPropagation(); handleDelete(product.id); }}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  )}
+                </Card>
+              </Box>
+            );
+          })
+        ) : (
+          <Box gridColumn="span / 3">
+            <Typography variant="body1" sx={{ p: 2 }}>No products found.</Typography>
+          </Box>
+        )}
+      </SimpleGrid>
 
       <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
         <Pagination
@@ -291,81 +337,100 @@ const Products = () => {
         />
       </Box>
 
-      <Dialog open={open} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>
+      <Dialog
+        open={open}
+        onClose={handleCloseDialog}
+        aria-labelledby="form-dialog-title"
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle id="form-dialog-title">
           {selectedProduct ? 'Edit Product' : 'Add New Product'}
         </DialogTitle>
-        <form onSubmit={handleSubmit}>
-          <DialogContent>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <TextField
-                fullWidth
-                label="Name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-              />
-              <TextField
-                fullWidth
-                select
-                label="Category"
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                required
-              >
-                {categories.map((category) => (
-                  <MenuItem key={category} value={category}>
-                    {category}
+        <DialogContent>
+          <form onSubmit={handleSubmit}>
+            <TextField
+              autoFocus
+              margin="dense"
+              id="name"
+              label="Product Name"
+              type="text"
+              fullWidth
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+            <TextField
+              margin="dense"
+              id="description"
+              label="Description"
+              type="text"
+              fullWidth
+              multiline
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            />
+            <TextField
+              margin="dense"
+              id="price"
+              label="Price"
+              type="number"
+              fullWidth
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+              required
+            />
+            <TextField
+              margin="dense"
+              id="stock"
+              label="Stock"
+              type="number"
+              fullWidth
+              value={formData.stock}
+              onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+              required
+            />
+            <TextField
+              margin="dense"
+              id="category"
+              select
+              label="Category"
+              fullWidth
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              required
+            >
+              <MenuItem value="">Select Category</MenuItem>
+              {Array.isArray(categories) && categories.length > 0 ? (
+                categories.map((cat) => (
+                  <MenuItem key={cat} value={cat}>
+                    {cat}
                   </MenuItem>
-                ))}
-              </TextField>
-              <MuiGrid container spacing={2}>
-                <MuiGrid item component="div" xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                    required
-                    inputProps={{ min: 0, step: 0.01 }}
-                  />
-                </MuiGrid>
-                <MuiGrid item component="div" xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Stock"
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
-                    required
-                    inputProps={{ min: 0 }}
-                  />
-                </MuiGrid>
-              </MuiGrid>
-              <TextField
-                fullWidth
-                label="Description"
-                multiline
-                rows={4}
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-              <TextField
-                fullWidth
-                label="Supplier ID"
-                value={formData.supplierId}
-                onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
-              />
-            </Box>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
-            <Button type="submit" variant="contained">
-              {selectedProduct ? 'Update' : 'Create'}
-            </Button>
-          </DialogActions>
-        </form>
+                ))
+              ) : (
+                <MenuItem value="" disabled>No categories available</MenuItem>
+              )}
+            </TextField>
+            <TextField
+              margin="dense"
+              id="supplierId"
+              label="Supplier ID"
+              type="text"
+              fullWidth
+              value={formData.supplierId}
+              onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+            />
+          </form>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog} color="primary">
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} color="primary">
+            {selectedProduct ? 'Update' : 'Add'}
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

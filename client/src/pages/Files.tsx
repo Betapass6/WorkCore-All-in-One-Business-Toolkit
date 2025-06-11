@@ -30,6 +30,10 @@ export default function Files() {
   const toast = useToast()
 
   useEffect(() => {
+    console.log('Files data:', files); // Debug log
+  }, [files]);
+
+  useEffect(() => {
     if (user?.role) {
       fetchStats(user.role)
     } else {
@@ -125,25 +129,29 @@ export default function Files() {
           <Heading size="md" mb={4}>
             Recent Files
           </Heading>
-          {files?.map((file) => (
-            <Box key={file.id} p={4} borderWidth={1} borderRadius="md" mb={4}>
-              <Heading size="sm">{file.fileName}</Heading>
-              <Box mt={2} fontSize="sm" color="gray.500">
-                Uploaded: {new Date(file.uploadDate).toLocaleDateString()}
+          {Array.isArray(files) && files.length > 0 ? (
+            files.map((file) => (
+              <Box key={file.id} p={4} borderWidth={1} borderRadius="md" mb={4}>
+                <Heading size="sm">{file.fileName}</Heading>
+                <Box mt={2} fontSize="sm" color="gray.500">
+                  Uploaded: {new Date(file.uploadDate).toLocaleDateString()}
+                </Box>
+                <Box mt={2} fontSize="sm" color="gray.500">
+                  Expires: {new Date(file.url).toLocaleDateString()}
+                </Box>
+                <HStack mt={4}>
+                  <Button size="sm" colorScheme="blue" onClick={() => handleDownload(file.id)}>
+                    Download
+                  </Button>
+                  <Button size="sm" colorScheme="red" onClick={() => handleDelete(file.id)}>
+                    Delete
+                  </Button>
+                </HStack>
               </Box>
-              <Box mt={2} fontSize="sm" color="gray.500">
-                Expires: {new Date(file.url).toLocaleDateString()}
-              </Box>
-              <HStack mt={4}>
-                <Button size="sm" colorScheme="blue" onClick={() => handleDownload(file.id)}>
-                  Download
-                </Button>
-                <Button size="sm" colorScheme="red" onClick={() => handleDelete(file.id)}>
-                  Delete
-                </Button>
-              </HStack>
-            </Box>
-          ))}
+            ))
+          ) : (
+            <Text>No files found</Text>
+          )}
         </Box>
       </VStack>
     </Box>

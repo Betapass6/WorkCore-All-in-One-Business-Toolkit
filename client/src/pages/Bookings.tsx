@@ -28,7 +28,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons';
-import { useFetch, UseFetchResult } from '../hooks/useFetch';
+import { useFetch } from '../hooks/useFetch';
 import { Booking, Service } from '../types';
 import bookingService from '../services/booking.service';
 import dashboardService from '../services/dashboard.service';
@@ -37,6 +37,13 @@ import { useAuth } from '../hooks/useAuth';
 
 type SortField = 'date' | 'time' | 'service' | 'customer' | 'status';
 type SortOrder = 'asc' | 'desc';
+
+type FetchBookingsResult = {
+  data: Booking[] | null;
+  loading: boolean;
+  error: Error | null;
+  refetch: () => Promise<void>;
+};
 
 export default function Bookings() {
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -53,7 +60,7 @@ export default function Bookings() {
   const toast = useToast();
   const { user } = useAuth();
 
-  const { data: bookings, loading: bookingsLoading, refetch: refetchBookings }: UseFetchResult<Booking[]> = useFetch<Booking[]>({ url: `/api/bookings/my-bookings` });
+  const { data: bookings, loading: bookingsLoading, refetch: refetchBookings } = useFetch<Booking[]>({ url: `/api/bookings/my-bookings` }) as FetchBookingsResult;
   const { data: services, loading: servicesLoading } = useFetch<Service[]>({ url: `/api/services` });
 
   useEffect(() => {

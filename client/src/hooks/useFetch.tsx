@@ -17,13 +17,8 @@ export interface UseFetchResult<T> {
   refetch: () => Promise<void>
 }
 
-export function useFetch<T>({ 
-  url, 
-  method = 'GET', 
-  body, 
-  headers = {},
-  cacheTime = 300000 // Default 5 minutes cache
-}: UseFetchOptions): UseFetchResult<T> {
+export function useFetch<T>(options: UseFetchOptions): UseFetchResult<T> {
+  const { url, method = 'GET', body, headers = {}, cacheTime = 300000 } = options;
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(true)
@@ -38,17 +33,14 @@ export function useFetch<T>({
     try {
       setLoading(true)
       setError(null)
-      
       // Ensure URL starts with /api
       const apiUrl = url.startsWith('/api') ? url : `/api${url}`
-      
       const response = await api.request({
         url: apiUrl,
         method,
         data: body,
         headers: memoizedHeaders,
       })
-      
       setData(response.data)
     } catch (err) {
       setError(err instanceof Error ? err : new Error('An error occurred'))
@@ -59,13 +51,11 @@ export function useFetch<T>({
 
   useEffect(() => {
     let mounted = true
-
     const fetchWithCache = async () => {
       if (method === 'GET' && cacheTime > 0) {
         const cacheKey = `${method}:${url}`
         const cachedData = sessionStorage.getItem(cacheKey)
         const cachedTimestamp = sessionStorage.getItem(`${cacheKey}:timestamp`)
-        
         if (cachedData && cachedTimestamp) {
           const timestamp = parseInt(cachedTimestamp)
           if (Date.now() - timestamp < cacheTime) {
@@ -75,14 +65,11 @@ export function useFetch<T>({
           }
         }
       }
-      
       await fetchData()
     }
-
     if (mounted) {
       fetchWithCache()
     }
-
     return () => {
       mounted = false
     }

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient, Role } from '@prisma/client';
 import { body, param, validationResult } from 'express-validator';
 import { requireRole } from '../middleware/role.middleware';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -69,6 +70,22 @@ router.get('/', async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error fetching products' });
+  }
+});
+
+// Get all distinct categories (Client, Staff, Admin) - Requires authentication
+router.get('/categories', authenticate, async (req: Request, res: Response) => {
+  try {
+    const categories = await prisma.product.findMany({
+      distinct: ['category'],
+      select: {
+        category: true,
+      },
+    });
+    res.json(categories.map(c => c.category));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error fetching categories' });
   }
 });
 
