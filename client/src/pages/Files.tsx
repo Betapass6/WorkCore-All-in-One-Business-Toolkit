@@ -34,16 +34,16 @@ export default function Files() {
   }, [files]);
 
   useEffect(() => {
-    if (user?.role) {
-      fetchStats(user.role)
+    if (user) {
+      fetchStats()
     } else {
       setLoadingStats(false)
     }
   }, [user])
 
-  const fetchStats = async (role: string) => {
+  const fetchStats = async () => {
     try {
-      const data = await dashboardService.getStats(role)
+      const data = await dashboardService.getStats()
       setStats(data)
     } catch (error) {
       toast({
@@ -131,23 +131,23 @@ export default function Files() {
           </Heading>
           {Array.isArray(files) && files.length > 0 ? (
             files.map((file) => (
-              <Box key={file.id} p={4} borderWidth={1} borderRadius="md" mb={4}>
-                <Heading size="sm">{file.fileName}</Heading>
-                <Box mt={2} fontSize="sm" color="gray.500">
-                  Uploaded: {new Date(file.uploadDate).toLocaleDateString()}
-                </Box>
-                <Box mt={2} fontSize="sm" color="gray.500">
-                  Expires: {new Date(file.url).toLocaleDateString()}
-                </Box>
-                <HStack mt={4}>
-                  <Button size="sm" colorScheme="blue" onClick={() => handleDownload(file.id)}>
-                    Download
-                  </Button>
-                  <Button size="sm" colorScheme="red" onClick={() => handleDelete(file.id)}>
-                    Delete
-                  </Button>
-                </HStack>
+            <Box key={file.id} p={4} borderWidth={1} borderRadius="md" mb={4}>
+              <Heading size="sm">{file.fileName}</Heading>
+              <Box mt={2} fontSize="sm" color="gray.500">
+                Uploaded: {new Date(file.uploadDate).toLocaleDateString()}
               </Box>
+              <Box mt={2} fontSize="sm" color="gray.500">
+                Expires: {new Date(file.url).toLocaleDateString()}
+              </Box>
+              <HStack mt={4}>
+                <Button size="sm" colorScheme="blue" onClick={() => handleDownload(file.id)}>
+                  Download
+                </Button>
+                <Button size="sm" colorScheme="red" onClick={() => handleDelete(file.id)}>
+                  Delete
+                </Button>
+              </HStack>
+            </Box>
             ))
           ) : (
             <Text>No files found</Text>

@@ -1,21 +1,19 @@
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
-import { authenticate } from '../middleware/auth.middleware';
+// import { authenticate } from '../middleware/auth.middleware'; // No longer needed here as authMiddleware is global
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// GET /api/dashboard/:role
-router.get('/:role', authenticate, async (req: Request, res: Response) => {
-  const { role } = req.params;
+// GET /api/dashboard
+router.get('/', async (req: Request, res: Response) => {
   const userRole = req.user?.role;
   const userId = req.user?.userId;
 
   if (!userRole) return res.status(401).json({ message: 'Unauthorized' });
-  if (role.toUpperCase() !== userRole) return res.status(403).json({ message: 'Forbidden' });
 
   try {
-    if (role.toUpperCase() === 'ADMIN') {
+    if (userRole === 'ADMIN') {
       // Admin: show global stats
       const [totalUsers, totalProducts, totalBookings, totalFiles, totalFeedback] = await Promise.all([
         prisma.user.count(),

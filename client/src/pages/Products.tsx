@@ -1,43 +1,45 @@
 import { useState, useEffect } from 'react';
 import {
   Box,
-  Card,
-  CardContent,
-  Typography,
-  TextField,
-  MenuItem,
+  SimpleGrid,
   Button,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  ModalCloseButton,
+  Text,
+  Heading,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  Select,
+  Spinner,
+  Tag,
+  FormControl,
+  FormLabel,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Rating,
-  Chip,
-  Pagination,
-  useTheme,
-  CircularProgress,
-} from '@mui/material';
-import {
-  Grid,
-  SimpleGrid
+  HStack,
+  VStack,
 } from '@chakra-ui/react';
 import {
-  Add as AddIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  Search as SearchIcon,
-} from '@mui/icons-material';
+  AddIcon,
+  EditIcon,
+  DeleteIcon,
+  SearchIcon,
+} from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import productService from '../services/product.service';
 import { Product } from '../types/product';
-import { toast } from 'react-toastify';
+import { useToast } from '../contexts/ToastContext';
 
 const Products = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [page, setPage] = useState(1);
@@ -93,7 +95,7 @@ const Products = () => {
       setProducts(response.products || []);
       setTotalPages(Math.ceil((response.total || 0) / 12));
     } catch (error) {
-      toast.error('Failed to fetch products');
+      showToast('Failed to fetch products', 'error');
       setProducts([]);
       setTotalPages(1);
     }
@@ -104,7 +106,7 @@ const Products = () => {
       const data = await productService.getCategories();
       setCategories(data || []);
     } catch (error) {
-      toast.error('Failed to fetch categories');
+      showToast('Failed to fetch categories', 'error');
       setCategories([]);
     }
   };
@@ -120,8 +122,8 @@ const Products = () => {
 
   if (isLoading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
+      <Box display='flex' justifyContent='center' alignItems='center' minH='100vh'>
+        <Spinner size='xl' />
       </Box>
     );
   }
@@ -178,10 +180,10 @@ const Products = () => {
 
       if (selectedProduct) {
         await productService.updateProduct(selectedProduct.id, data);
-        toast.success('Product updated successfully');
+        showToast('Product updated successfully', 'success');
       } else {
         await productService.createProduct(data);
-        toast.success('Product created successfully');
+        showToast('Product created successfully', 'success');
       }
 
       handleCloseDialog();
@@ -192,7 +194,7 @@ const Products = () => {
       ]);
       setIsLoading(false);
     } catch (error) {
-      toast.error(selectedProduct ? 'Failed to update product' : 'Failed to create product');
+      showToast(selectedProduct ? 'Failed to update product' : 'Failed to create product', 'error');
     }
   };
 
@@ -200,7 +202,7 @@ const Products = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await productService.deleteProduct(id);
-        toast.success('Product deleted successfully');
+        showToast('Product deleted successfully', 'success');
         setIsLoading(true);
         await Promise.all([
           fetchProducts(),
@@ -208,7 +210,7 @@ const Products = () => {
         ]);
         setIsLoading(false);
       } catch (error) {
-        toast.error('Failed to delete product');
+        showToast('Failed to delete product', 'error');
       }
     }
   };
@@ -217,221 +219,198 @@ const Products = () => {
   const isStaff = user?.role === 'STAFF';
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+    <Box p={6}>
+      <HStack justifyContent='space-between' mb={6}>
+        <Heading as='h1' size='xl'>
           Products
-        </Typography>
+        </Heading>
         {(isAdmin || isStaff) && (
           <Button
-            variant="contained"
-            startIcon={<AddIcon />}
+            variant='solid'
+            colorScheme='blue'
+            leftIcon={<AddIcon />}
             onClick={() => handleOpenDialog()}
           >
             Add Product
           </Button>
         )}
-      </Box>
+      </HStack>
 
-      <Box sx={{ mb: 3 }}>
-        <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }} gap={2}>
-          <Box>
-            <TextField
-              fullWidth
-              label="Search"
+      <VStack spacing={4} mb={6}>
+        <HStack width='100%' spacing={4}>
+          <InputGroup>
+            <InputLeftElement pointerEvents="none">
+              <SearchIcon color="gray.300" />
+            </InputLeftElement>
+            <Input
+              placeholder='Search'
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
-              InputProps={{
-                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-              }}
             />
-          </Box>
-          <Box>
-            <TextField
-              fullWidth
-              select
-              label="Category"
+          </InputGroup>
+          <Select
+            placeholder='All Categories'
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
-              <MenuItem value="">All Categories</MenuItem>
-              {Array.isArray(categories) && categories.length > 0 ? (
-                categories.map((category) => (
-                  <MenuItem key={category} value={category}>
-                    {category}
-                  </MenuItem>
-                ))
-              ) : (
-                <MenuItem value="" disabled>No categories available</MenuItem>
-              )}
-            </TextField>
-          </Box>
-        </Grid>
-      </Box>
+            <option value=''>All Categories</option>
+            {Array.isArray(categories) && categories.length > 0 ? (
+              categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))
+            ) : (
+              <option value='' disabled>No categories available</option>
+            )}
+          </Select>
+        </HStack>
+      </VStack>
 
-      <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={3}>
+      <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4}>
         {Array.isArray(products) && products.length > 0 ? (
           products.map((product) => {
-            // console.log('Rendering product:', product); // Debugging line
             return (
               <Box key={product.id}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    '&:hover': {
-                      boxShadow: theme.shadows[4],
-                      cursor: 'pointer',
-                    },
-                  }}
-                  onClick={() => navigate(`/products/${product.id}/${user?.role.toLowerCase()}`)}
-                >
-                  <CardContent>
-                    <Typography variant="h6" component="h2" gutterBottom>
-                      {product.name}
-                    </Typography>
-                    <Typography color="text.secondary" gutterBottom>
-                      {product.category}
-                    </Typography>
-                    <Typography variant="h6" color="primary" gutterBottom>
-                      ${product.price.toFixed(2)}
-                    </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Rating value={product.feedbacks?.[0]?.rating || 0} readOnly size="small" />
-                      <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                        ({product.feedbacks?.length || 0} reviews)
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      Stock: {product.stock}
-                    </Typography>
-                  </CardContent>
+                <Box
+                  borderWidth='1px'
+                  borderRadius='lg'
+                  overflow='hidden'
+                  p={4}
+                  _hover={{ boxShadow: 'lg', cursor: 'pointer' }}
+                  onClick={() => navigate(`/products/${product.id}`)}
+            >
+                  <Heading as='h2' size='md' mb={2}>
+                  {product.name}
+                  </Heading>
+                  <Text color='gray.600' mb={2}>
+                  {product.category}
+                  </Text>
+                  <Text fontSize='xl' fontWeight='bold' color='blue.500' mb={2}>
+                  ${product.price.toFixed(2)}
+                  </Text>
+                  <Text fontSize='sm' color='gray.500' mb={2}>
+                    Rating: {product.feedbacks?.[0]?.rating || 0} ({product.feedbacks?.length || 0} reviews)
+                  </Text>
+                  <Tag
+                    size='md'
+                    colorScheme={product.stock > 0 ? 'green' : 'red'}
+                    variant='solid'
+                  >
+                    Stock: {product.stock}
+                  </Tag>
                   {(isAdmin || isStaff) && (
-                    <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                      <IconButton onClick={(e) => { e.stopPropagation(); handleOpenDialog(product); }}>
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton onClick={(e) => { e.stopPropagation(); handleDelete(product.id); }}>
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
+                    <HStack mt={4} justifyContent='flex-end'>
+                      <IconButton
+                        aria-label='Edit product'
+                        icon={<EditIcon />}
+                        onClick={(e) => { e.stopPropagation(); handleOpenDialog(product); }}
+                      />
+                      <IconButton
+                        aria-label='Delete product'
+                        icon={<DeleteIcon />}
+                        colorScheme='red'
+                        onClick={(e) => { e.stopPropagation(); handleDelete(product.id); }}
+                      />
+                    </HStack>
                   )}
-                </Card>
+                </Box>
               </Box>
             );
           })
         ) : (
-          <Box gridColumn="span / 3">
-            <Typography variant="body1" sx={{ p: 2 }}>No products found.</Typography>
-          </Box>
-        )}
+          <Box gridColumn='span / 3'>
+            <Text p={2}>No products found.</Text>
+                  </Box>
+                )}
       </SimpleGrid>
 
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-        <Pagination
-          count={totalPages}
-          page={page}
-          onChange={handlePageChange}
-          color="primary"
-        />
-      </Box>
-
-      <Dialog
-        open={open}
-        onClose={handleCloseDialog}
-        aria-labelledby="form-dialog-title"
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle id="form-dialog-title">
-          {selectedProduct ? 'Edit Product' : 'Add New Product'}
-        </DialogTitle>
-        <DialogContent>
-          <form onSubmit={handleSubmit}>
-            <TextField
-              autoFocus
-              margin="dense"
-              id="name"
-              label="Product Name"
-              type="text"
-              fullWidth
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              required
-            />
-            <TextField
-              margin="dense"
-              id="description"
-              label="Description"
-              type="text"
-              fullWidth
-              multiline
-              rows={3}
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-            />
-            <TextField
-              margin="dense"
-              id="price"
-              label="Price"
-              type="number"
-              fullWidth
-              value={formData.price}
-              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-              required
-            />
-            <TextField
-              margin="dense"
-              id="stock"
-              label="Stock"
-              type="number"
-              fullWidth
-              value={formData.stock}
-              onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
-              required
-            />
-            <TextField
-              margin="dense"
-              id="category"
-              select
-              label="Category"
-              fullWidth
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              required
-            >
-              <MenuItem value="">Select Category</MenuItem>
-              {Array.isArray(categories) && categories.length > 0 ? (
-                categories.map((cat) => (
-                  <MenuItem key={cat} value={cat}>
-                    {cat}
-                  </MenuItem>
-                ))
-              ) : (
-                <MenuItem value="" disabled>No categories available</MenuItem>
-              )}
-            </TextField>
-            <TextField
-              margin="dense"
-              id="supplierId"
-              label="Supplier ID"
-              type="text"
-              fullWidth
-              value={formData.supplierId}
-              onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
-            />
-          </form>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog} color="primary">
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} color="primary">
-            {selectedProduct ? 'Update' : 'Add'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <Modal isOpen={open} onClose={handleCloseDialog}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>{selectedProduct ? 'Edit Product' : 'Add New Product'}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>Product Name</FormLabel>
+                <Input
+                  id='name'
+                  placeholder='Product Name'
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </FormControl>
+              <FormControl>
+                <FormLabel>Description</FormLabel>
+                <Input
+                  id='description'
+                  placeholder='Description'
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Price</FormLabel>
+                <Input
+                  id='price'
+                  type='number'
+                  placeholder='Price'
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Stock</FormLabel>
+                <Input
+                  id='stock'
+                  type='number'
+                  placeholder='Stock'
+                    value={formData.stock}
+                    onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
+                />
+              </FormControl>
+              <FormControl isRequired>
+                <FormLabel>Category</FormLabel>
+                <Select
+                  id='category'
+                  placeholder='Select Category'
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                >
+                  <option value=''>Select Category</option>
+                  {Array.isArray(categories) && categories.length > 0 ? (
+                    categories.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat}
+                      </option>
+                    ))
+                  ) : (
+                    <option value='' disabled>No categories available</option>
+                  )}
+                </Select>
+              </FormControl>
+              <FormControl>
+                <FormLabel>Supplier ID</FormLabel>
+                <Input
+                  id='supplierId'
+                  placeholder='Supplier ID'
+                value={formData.supplierId}
+                onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+              />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={handleCloseDialog} variant='ghost' mr={3}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} colorScheme='blue'>
+              {selectedProduct ? 'Update' : 'Add'}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };

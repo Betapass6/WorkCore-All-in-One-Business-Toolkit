@@ -5,11 +5,11 @@ import { Spinner, Center } from '@chakra-ui/react'; // Assuming Chakra UI is use
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'ADMIN' | 'STAFF' | 'USER';
+  requiredRoles: Array<'ADMIN' | 'STAFF' | 'USER'>;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
-  const { user, isAuthenticated, isAdmin, isStaff, loading } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRoles }) => {
+  const { user, isAuthenticated, loading } = useAuth();
 
   // Show a loading indicator while authentication status is being checked
   if (loading) {
@@ -24,16 +24,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole 
     return <Navigate to="/login" replace />;
   }
 
-  if (requiredRole) {
-    if (requiredRole === 'ADMIN' && !isAdmin) {
-      return <Navigate to="/unauthorized" replace />;
-    }
-    if (requiredRole === 'STAFF' && !isStaff && !isAdmin) {
-      return <Navigate to="/unauthorized" replace />;
-    }
-    if (requiredRole === 'USER' && !user) { // Added check for USER role
-      return <Navigate to="/unauthorized" replace />;
-    }
+  if (user && !requiredRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" replace />;
   }
 
   return <>{children}</>;

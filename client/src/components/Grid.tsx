@@ -1,13 +1,10 @@
-import { Grid as MuiGrid, GridProps as MuiGridProps } from '@mui/material';
+import { Grid as ChakraGrid, GridProps as ChakraGridProps } from '@chakra-ui/react';
 import { forwardRef } from 'react';
 
-export type GridProps = MuiGridProps & {
-  item?: boolean;
-  container?: boolean;
-};
+export type GridProps = ChakraGridProps;
 
 export const Grid = forwardRef<HTMLDivElement, GridProps>((props, ref) => {
-  return <MuiGrid ref={ref} {...props} />;
+  return <ChakraGrid ref={ref} {...props} />;
 });
 
 Grid.displayName = 'Grid'; 

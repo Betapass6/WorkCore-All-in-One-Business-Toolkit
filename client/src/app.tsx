@@ -16,11 +16,11 @@ import Services from './pages/Services';
 import Bookings from './pages/Bookings';
 import Feedback from './pages/Feedback';
 import Files from './pages/Files';
+import AdminPanel from './pages/AdminPanel';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './layouts/MainLayout';
-import RoleBasedRedirect from './components/RoleBasedRedirect';
 
 function App() {
   return (
@@ -35,40 +35,42 @@ function App() {
 
             {/* Protected Routes using MainLayout */}
             <Route element={<Layout />}>
-              {/* Use RoleBasedRedirect for the root path */}
               <Route
                 path="/"
-                element={<ProtectedRoute><RoleBasedRedirect /></ProtectedRoute>}
+                element={<ProtectedRoute requiredRoles={['ADMIN', 'STAFF', 'USER']}><Dashboard /></ProtectedRoute>}
               />
 
-              {/* Dynamic role-based routes for all main pages */}
               <Route
-                path="/dashboard/:role"
-                element={<ProtectedRoute><Dashboard /></ProtectedRoute>}
+                path="/dashboard"
+                element={<ProtectedRoute requiredRoles={['ADMIN', 'STAFF', 'USER']}><Dashboard /></ProtectedRoute>}
               />
               <Route
-                path="/products/:role"
-                element={<ProtectedRoute><Products /></ProtectedRoute>}
+                path="/products"
+                element={<ProtectedRoute requiredRoles={['ADMIN', 'STAFF']}><Products /></ProtectedRoute>}
               />
               <Route
-                path="/products/:id/:role"
-                element={<ProtectedRoute><ProductDetails /></ProtectedRoute>}
+                path="/products/:id"
+                element={<ProtectedRoute requiredRoles={['ADMIN', 'STAFF']}><ProductDetails /></ProtectedRoute>}
               />
               <Route
-                path="/services/:role"
-                element={<ProtectedRoute><Services /></ProtectedRoute>}
+                path="/services"
+                element={<ProtectedRoute requiredRoles={['ADMIN', 'STAFF']}><Services /></ProtectedRoute>}
               />
               <Route
-                path="/bookings/:role"
-                element={<ProtectedRoute><Bookings /></ProtectedRoute>}
+                path="/bookings"
+                element={<ProtectedRoute requiredRoles={['ADMIN', 'STAFF', 'USER']}><Bookings /></ProtectedRoute>}
               />
               <Route
-                path="/feedback/:role"
-                element={<ProtectedRoute><Feedback /></ProtectedRoute>}
+                path="/feedback"
+                element={<ProtectedRoute requiredRoles={['ADMIN', 'STAFF', 'USER']}><Feedback /></ProtectedRoute>}
               />
               <Route
-                path="/files/:role"
-                element={<ProtectedRoute><Files /></ProtectedRoute>}
+                path="/files"
+                element={<ProtectedRoute requiredRoles={['ADMIN', 'STAFF', 'USER']}><Files /></ProtectedRoute>}
+              />
+              <Route
+                path="/admin"
+                element={<ProtectedRoute requiredRoles={['ADMIN']}><AdminPanel /></ProtectedRoute>}
               />
             </Route>
 

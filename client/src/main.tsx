@@ -18,6 +18,16 @@ const muiTheme = createTheme({
       xl: 1920,
     },
   },
+  components: {
+    MuiDialog: {
+      defaultProps: {
+        maxWidth: false, // Override default maxWidth behavior
+        PaperProps: {
+          elevation: 1, // Set a safe default elevation
+        },
+      },
+    },
+  },
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

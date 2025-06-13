@@ -1,7 +1,7 @@
 import api from './api';
 import { Product, ProductFilters, ProductResponse } from '../types/product';
 
-const API_URL = '/api/products'; // Use relative path since API instance has base URL
+const API_URL = '/api/products';
 
 class ProductService {
   async getProducts(filters: ProductFilters = {}): Promise<ProductResponse> {

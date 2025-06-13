@@ -38,16 +38,16 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (user?.role) {
-      fetchStats(user.role)
+    if (user) {
+      fetchStats()
     } else {
       setLoading(false)
     }
   }, [user])
 
-  const fetchStats = async (role: string) => {
+  const fetchStats = async () => {
     try {
-      const data = await dashboardService.getStats(role)
+      const data = await dashboardService.getStats()
       setStats(data)
     } catch (error) {
       showToast('Failed to fetch dashboard stats', 'error')

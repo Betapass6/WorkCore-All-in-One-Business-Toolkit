@@ -31,11 +31,54 @@ const MainLayout: React.FC<MainLayoutProps> = () => {
     isOpen ? onClose() : onOpen()
   }
 
-  // Helper to construct paths with role
-  const withRole = (basePath: string) => {
-    const rolePath = user?.role?.toLowerCase() ?? ''
-    return rolePath ? `${basePath}/${rolePath}` : basePath
-  }
+  const navItems = [
+    {
+      label: 'Dashboard',
+      icon: SettingsIcon,
+      path: '/',
+      roles: ['ADMIN', 'STAFF', 'USER'],
+    },
+    {
+      label: 'Products',
+      icon: InfoOutlineIcon,
+      path: '/products',
+      roles: ['ADMIN', 'STAFF'],
+    },
+    {
+      label: 'Services',
+      icon: StarIcon,
+      path: '/services',
+      roles: ['ADMIN', 'STAFF'],
+    },
+    {
+      label: 'Bookings',
+      icon: CalendarIcon,
+      path: '/bookings',
+      roles: ['ADMIN', 'STAFF', 'USER'],
+    },
+    {
+      label: 'Feedback',
+      icon: ChatIcon,
+      path: '/feedback',
+      roles: ['ADMIN', 'STAFF', 'USER'],
+    },
+    {
+      label: 'Files',
+      icon: ViewIcon,
+      path: '/files',
+      roles: ['ADMIN', 'STAFF', 'USER'],
+    },
+    {
+      label: 'Admin Panel',
+      icon: SettingsIcon,
+      path: '/admin',
+      roles: ['ADMIN'],
+    },
+  ]
+
+  const filteredNavItems = navItems.filter(item =>
+    item.roles.includes(user?.role ?? 'USER')
+  )
 
   const drawer = (
     <VStack spacing={0} align="stretch">
@@ -45,106 +88,23 @@ const MainLayout: React.FC<MainLayoutProps> = () => {
         </Text>
       </Box>
       <List spacing={0}>
-        <ListItem
-          p="4"
-          cursor="pointer"
-          _hover={{ bg: 'gray.100' }}
-          onClick={() => {
-            navigate(withRole('/dashboard'))
-            onClose()
-          }}
-        >
-          <HStack spacing={4}>
-            <ListIcon as={SettingsIcon} />
-            <Text>Dashboard</Text>
-          </HStack>
-        </ListItem>
-        <ListItem
-          p="4"
-          cursor="pointer"
-          _hover={{ bg: 'gray.100' }}
-          onClick={() => {
-            navigate(withRole('/products'))
-            onClose()
-          }}
-        >
-          <HStack spacing={4}>
-            <ListIcon as={InfoOutlineIcon} />
-            <Text>Products</Text>
-          </HStack>
-        </ListItem>
-        <ListItem
-          p="4"
-          cursor="pointer"
-          _hover={{ bg: 'gray.100' }}
-          onClick={() => {
-            navigate(withRole('/services'))
-            onClose()
-          }}
-        >
-          <HStack spacing={4}>
-            <ListIcon as={StarIcon} />
-            <Text>Services</Text>
-          </HStack>
-        </ListItem>
-        <ListItem
-          p="4"
-          cursor="pointer"
-          _hover={{ bg: 'gray.100' }}
-          onClick={() => {
-            navigate(withRole('/bookings'))
-            onClose()
-          }}
-        >
-          <HStack spacing={4}>
-            <ListIcon as={CalendarIcon} />
-            <Text>Bookings</Text>
-          </HStack>
-        </ListItem>
-        <ListItem
-          p="4"
-          cursor="pointer"
-          _hover={{ bg: 'gray.100' }}
-          onClick={() => {
-            navigate(withRole('/feedback'))
-            onClose()
-          }}
-        >
-          <HStack spacing={4}>
-            <ListIcon as={ChatIcon} />
-            <Text>Feedback</Text>
-          </HStack>
-        </ListItem>
-        <ListItem
-          p="4"
-          cursor="pointer"
-          _hover={{ bg: 'gray.100' }}
-          onClick={() => {
-            navigate(withRole('/files'))
-            onClose()
-          }}
-        >
-          <HStack spacing={4}>
-            <ListIcon as={ViewIcon} />
-            <Text>Files</Text>
-          </HStack>
-        </ListItem>
-        {user?.role === 'ADMIN' && (
+        {filteredNavItems.map((item) => (
           <ListItem
+            key={item.label}
             p="4"
             cursor="pointer"
             _hover={{ bg: 'gray.100' }}
             onClick={() => {
-              navigate('/admin')
+              navigate(item.path)
               onClose()
             }}
           >
             <HStack spacing={4}>
-              <ListIcon as={SettingsIcon} />
-              <Text>Admin Panel</Text>
+              <ListIcon as={item.icon} />
+              <Text>{item.label}</Text>
             </HStack>
           </ListItem>
-        )}
+        ))}
       </List>
     </VStack>
   )

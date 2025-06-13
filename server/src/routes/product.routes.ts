@@ -4,6 +4,8 @@ import { body, param, validationResult } from 'express-validator';
 import { requireRole } from '../middleware/role.middleware';
 import { authenticate } from '../middleware/auth.middleware';
 
+console.log('product.routes.ts: Router loaded');
+
 const router = Router();
 const prisma = new PrismaClient();
 
@@ -52,6 +54,7 @@ router.post(
 
 // Get all products (Client, Staff, Admin) - Requires authentication, but no specific role
 router.get('/', async (req: Request, res: Response) => {
+  console.log('product.routes.ts: GET / route hit');
   try {
     const { search, skip, take } = req.query;
     const products = await prisma.product.findMany({
@@ -74,7 +77,8 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // Get all distinct categories (Client, Staff, Admin) - Requires authentication
-router.get('/categories', authenticate, async (req: Request, res: Response) => {
+router.get('/categories', async (req: Request, res: Response) => {
+  console.log('product.routes.ts: GET /categories route hit');
   try {
     const categories = await prisma.product.findMany({
       distinct: ['category'],

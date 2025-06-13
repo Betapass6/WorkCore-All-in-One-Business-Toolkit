@@ -48,16 +48,16 @@ export default function Services() {
   const { user } = useAuth()
 
   useEffect(() => {
-    if (user?.role) {
-      fetchStats(user.role)
+    if (user) {
+      fetchStats()
     } else {
       setLoadingStats(false)
     }
   }, [user])
 
-  const fetchStats = async (role: string) => {
+  const fetchStats = async () => {
     try {
-      const data = await dashboardService.getStats(role)
+      const data = await dashboardService.getStats()
       setStats(data)
     } catch (error) {
       toast({

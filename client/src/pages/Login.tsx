@@ -37,15 +37,8 @@ export default function Login() {
         status: 'success',
         duration: 3000,
       });
-      
-      // Redirect based on user role
-      if (user?.role === 'ADMIN') {
-        navigate('/dashboard/admin');
-      } else if (user?.role === 'STAFF') {
-        navigate('/dashboard/staff');
-      } else {
-        navigate('/dashboard/user');
-      }
+      navigate('/dashboard');
+
     } catch (error) {
       toast({
         title: 'Error',
