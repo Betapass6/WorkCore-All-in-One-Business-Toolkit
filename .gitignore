@@ -4,6 +4,4 @@ package-lock.json
 idea.txt
 error.log
 combined.log
-uploads/*
-!uploads/
-!uploads/.gitkeep
+uploads/
