@@ -1,15 +1,15 @@
 import api from './api';
 import { Product, ProductFilters, ProductResponse } from '../types/product';
 
-const API_URL = '/api/products';
+const API_URL = '/products';
 
 class ProductService {
   async getProducts(filters: ProductFilters = {}): Promise<ProductResponse> {
     const params = new URLSearchParams();
     if (filters.search) params.append('search', filters.search);
     if (filters.category) params.append('category', filters.category);
-    if (filters.page) params.append('page', filters.page.toString());
-    if (filters.limit) params.append('limit', filters.limit.toString());
+    if (filters.skip) params.append('skip', filters.skip.toString());
+    if (filters.take) params.append('take', filters.take.toString());
 
     const response = await api.get(`${API_URL}?${params.toString()}`);
     return response.data;

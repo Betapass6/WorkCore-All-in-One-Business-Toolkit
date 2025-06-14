@@ -60,8 +60,8 @@ export default function Bookings() {
   const toast = useToast();
   const { user } = useAuth();
 
-  const { data: bookings, loading: bookingsLoading, refetch: refetchBookings } = useFetch<Booking[]>({ url: `/api/bookings/my-bookings` }) as FetchBookingsResult;
-  const { data: services, loading: servicesLoading } = useFetch<Service[]>({ url: `/api/services` });
+  const { data: bookings, loading: bookingsLoading, refetch: refetchBookings } = useFetch<Booking[]>({ url: `/bookings/my-bookings` }) as FetchBookingsResult;
+  const { data: services, loading: servicesLoading } = useFetch<Service[]>({ url: `/services` });
 
   useEffect(() => {
     if (user) {

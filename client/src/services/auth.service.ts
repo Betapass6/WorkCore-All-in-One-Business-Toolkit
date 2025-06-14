@@ -40,6 +40,7 @@ class AuthService {
     });
     const { user, token } = response.data;
     localStorage.setItem('token', token);
+    console.log(API_BASE);
     return user;
   }
 

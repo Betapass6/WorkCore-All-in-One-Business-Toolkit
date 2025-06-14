@@ -22,6 +22,7 @@ import { authenticate } from './middleware/auth.middleware';
 import morgan from 'morgan';
 import { initScheduler } from './utils/scheduler';
 import dashboardRouter from './routes/dashboard.routes';
+import { adminDashboardRouter } from './routes/adminDashboard.routes';
 
 dotenv.config();
 
@@ -55,9 +56,9 @@ app.get('/test', (req: Request, res: Response) => {
 });
 
 // Public Routes (no auth required)
-app.use('/auth', authRouter);
-app.use('/files', fileRouter); // Allow public access to file download by UUID
-app.use('/services', serviceRouter); // Allow public access to view services
+app.use('/api/auth', authRouter);
+app.use('/files', fileRouter);
+app.use('/services', serviceRouter);
 
 // Apply authMiddleware to all routes below this line that require authentication
 app.use(authMiddleware);
@@ -78,6 +79,7 @@ app.use('/api/users', userRouter);
 
 // Admin routes requiring ADMIN role
 app.use('/api/admin', requireRole(Role.ADMIN), adminRouter); // Dashboard stats route
+app.use('/api/admin-dashboard', adminDashboardRouter);
 // Apply requireRole(Role.ADMIN) to specific routes within other routers if they should be admin-only
 // For example, in product.routes.ts: router.post('/', requireRole(Role.ADMIN), ...);
 // Or, mount admin-specific routes under the /api/admin group

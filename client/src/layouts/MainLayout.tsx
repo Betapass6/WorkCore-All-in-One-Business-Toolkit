@@ -11,8 +11,9 @@ import {
   AttachmentIcon,
   CalendarIcon,
   ChatIcon,
-  ViewIcon
+  ViewIcon,
 } from '@chakra-ui/icons'
+import { FaUsers } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -69,9 +70,15 @@ const MainLayout: React.FC<MainLayoutProps> = () => {
       roles: ['ADMIN', 'STAFF', 'USER'],
     },
     {
-      label: 'Admin Panel',
+      label: 'Admin Dashboard',
       icon: SettingsIcon,
       path: '/admin',
+      roles: ['ADMIN'],
+    },
+    {
+      label: 'User Management',
+      icon: FaUsers,
+      path: '/admin/users',
       roles: ['ADMIN'],
     },
   ]

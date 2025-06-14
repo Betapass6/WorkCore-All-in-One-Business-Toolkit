@@ -19,13 +19,15 @@ export const fileController = {
   // Get all files (admin) or user's files
   async getAll(req: Request, res: Response) {
     try {
+      console.log('File Controller: getAll - req.user:', (req as any).user);
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 10;
 
       const where: Prisma.FileWhereInput = {
         // If not admin, only show user's files
-        ...(req.user?.role !== 'ADMIN' ? { userId: req.user?.userId } : {}),
+        ...(req.user?.role !== 'ADMIN' ? { userId: (req as any).user?.userId } : {}),
       };
+      console.log('File Controller: getAll - constructed where clause:', where);
 
       const [files, total] = await Promise.all([
         prisma.file.findMany({
@@ -101,10 +103,15 @@ export const fileController = {
         return res.status(400).json({ message: 'No file uploaded' });
       }
 
-      const userId = req.user?.userId;
+      const userId = (req as any).user?.userId; // Explicitly cast req.user to any to access userId
+      console.log('File Upload: userId from request:', userId);
+
       if (!userId) {
+        console.error('File Upload Error: User not authenticated or userId missing.');
         return res.status(401).json({ message: 'User not authenticated' });
       }
+
+      console.log('File Upload: Raw file data from multer:', req.file);
 
       const fileData = createFileSchema.parse({
         fileName: req.file.filename,
@@ -112,6 +119,8 @@ export const fileController = {
         mimeType: req.file.mimetype,
         size: req.file.size,
       });
+
+      console.log('File Upload: Parsed fileData for database:', fileData);
 
       const file = await prisma.file.create({
         data: {
@@ -131,12 +140,14 @@ export const fileController = {
         },
       });
 
+      console.log('File Upload: File successfully created in DB:', file);
       res.status(201).json(file);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error('File Upload Error: Validation failed:', error.errors);
         return res.status(400).json({ message: 'Validation error', errors: error.errors });
       }
-      console.error('Error uploading file:', error);
+      console.error('Error uploading file (caught in catch block):', error);
       res.status(500).json({ message: 'Error uploading file' });
     }
   },

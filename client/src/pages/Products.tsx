@@ -51,8 +51,8 @@ const Products = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    price: 0,
-    stock: 0,
+    price: '',
+    stock: '',
     category: '',
     supplierId: '',
   });
@@ -86,14 +86,17 @@ const Products = () => {
 
   const fetchProducts = async () => {
     try {
+      const limit = 12;
+      const skip = (page - 1) * limit;
       const response = await productService.getProducts({
         search,
         category,
-        page,
-        limit: 12,
+        skip,
+        take: limit,
       });
+      console.log('Response from getProducts:', response);
       setProducts(response.products || []);
-      setTotalPages(Math.ceil((response.total || 0) / 12));
+      setTotalPages(Math.ceil((response.total || 0) / limit));
     } catch (error) {
       showToast('Failed to fetch products', 'error');
       setProducts([]);
@@ -128,14 +131,22 @@ const Products = () => {
     );
   }
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleOpenDialog = (product?: Product) => {
     if (product) {
       setSelectedProduct(product);
       setFormData({
         name: product.name,
         category: product.category,
-        price: product.price,
-        stock: product.stock,
+        price: product.price.toString(),
+        stock: product.stock.toString(),
         description: product.description || '',
         supplierId: product.supplierId || '',
       });
@@ -144,8 +155,8 @@ const Products = () => {
       setFormData({
         name: '',
         category: '',
-        price: 0,
-        stock: 0,
+        price: '',
+        stock: '',
         description: '',
         supplierId: '',
       });
@@ -159,8 +170,8 @@ const Products = () => {
     setFormData({
       name: '',
       category: '',
-      price: 0,
-      stock: 0,
+      price: '',
+      stock: '',
       description: '',
       supplierId: '',
     });
@@ -172,11 +183,16 @@ const Products = () => {
       const data = {
         name: formData.name,
         category: formData.category,
-        price: formData.price,
-        stock: formData.stock,
+        price: Number(formData.price),
+        stock: Number(formData.stock),
         description: formData.description,
         supplierId: formData.supplierId,
       };
+
+      if (isNaN(data.price) || isNaN(data.stock)) {
+        showToast('Price and Stock must be valid numbers.', 'error');
+        return;
+      }
 
       if (selectedProduct) {
         await productService.updateProduct(selectedProduct.id, data);
@@ -250,19 +266,14 @@ const Products = () => {
           </InputGroup>
           <Select
             placeholder='All Categories'
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-            <option value=''>All Categories</option>
-            {Array.isArray(categories) && categories.length > 0 ? (
-              categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))
-            ) : (
-              <option value='' disabled>No categories available</option>
-            )}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
           </Select>
         </HStack>
       </VStack>
@@ -279,15 +290,15 @@ const Products = () => {
                   p={4}
                   _hover={{ boxShadow: 'lg', cursor: 'pointer' }}
                   onClick={() => navigate(`/products/${product.id}`)}
-            >
+                >
                   <Heading as='h2' size='md' mb={2}>
-                  {product.name}
+                    {product.name}
                   </Heading>
                   <Text color='gray.600' mb={2}>
-                  {product.category}
+                    {product.category}
                   </Text>
                   <Text fontSize='xl' fontWeight='bold' color='blue.500' mb={2}>
-                  ${product.price.toFixed(2)}
+                    ${product.price.toFixed(2)}
                   </Text>
                   <Text fontSize='sm' color='gray.500' mb={2}>
                     Rating: {product.feedbacks?.[0]?.rating || 0} ({product.feedbacks?.length || 0} reviews)
@@ -321,91 +332,88 @@ const Products = () => {
         ) : (
           <Box gridColumn='span / 3'>
             <Text p={2}>No products found.</Text>
-                  </Box>
-                )}
+          </Box>
+        )}
       </SimpleGrid>
 
-      <Modal isOpen={open} onClose={handleCloseDialog}>
+      <Modal isOpen={open} onClose={handleCloseDialog} size='xl'>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>{selectedProduct ? 'Edit Product' : 'Add New Product'}</ModalHeader>
           <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4}>
-              <FormControl isRequired>
-                <FormLabel>Product Name</FormLabel>
-                <Input
-                  id='name'
-                  placeholder='Product Name'
+          <ModalBody pb={6}>
+            <FormControl isRequired mb={4}>
+              <FormLabel>Product Name</FormLabel>
+              <Input
+                name='name'
+                placeholder='Product Name'
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel>Description</FormLabel>
-                <Input
-                  id='description'
-                  placeholder='Description'
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </FormControl>
-              <FormControl isRequired>
-                <FormLabel>Price</FormLabel>
-                <Input
-                  id='price'
-                  type='number'
-                  placeholder='Price'
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
-                />
-              </FormControl>
-              <FormControl isRequired>
-                <FormLabel>Stock</FormLabel>
-                <Input
-                  id='stock'
-                  type='number'
-                  placeholder='Stock'
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: parseInt(e.target.value) })}
-                />
-              </FormControl>
-              <FormControl isRequired>
-                <FormLabel>Category</FormLabel>
-                <Select
-                  id='category'
-                  placeholder='Select Category'
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                >
-                  <option value=''>Select Category</option>
-                  {Array.isArray(categories) && categories.length > 0 ? (
-                    categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))
-                  ) : (
-                    <option value='' disabled>No categories available</option>
-                  )}
-                </Select>
-              </FormControl>
-              <FormControl>
-                <FormLabel>Supplier ID</FormLabel>
-                <Input
-                  id='supplierId'
-                  placeholder='Supplier ID'
-                value={formData.supplierId}
-                onChange={(e) => setFormData({ ...formData, supplierId: e.target.value })}
+                onChange={handleInputChange}
               />
-              </FormControl>
-            </VStack>
+            </FormControl>
+
+            <FormControl mb={4}>
+              <FormLabel>Description</FormLabel>
+              <Input
+                name='description'
+                placeholder='Description'
+                value={formData.description}
+                onChange={handleInputChange}
+              />
+            </FormControl>
+
+            <FormControl isRequired mb={4}>
+              <FormLabel>Price</FormLabel>
+              <Input
+                name='price'
+                type='number'
+                placeholder='Price'
+                value={formData.price}
+                onChange={handleInputChange}
+              />
+            </FormControl>
+
+            <FormControl isRequired mb={4}>
+              <FormLabel>Stock</FormLabel>
+              <Input
+                name='stock'
+                type='number'
+                placeholder='Stock'
+                value={formData.stock}
+                onChange={handleInputChange}
+              />
+            </FormControl>
+
+            <FormControl isRequired mb={4}>
+              <FormLabel>Category</FormLabel>
+              <Select
+                name='category'
+                placeholder='Select category'
+                value={formData.category}
+                onChange={handleInputChange}
+              >
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl mb={4}>
+              <FormLabel>Supplier ID</FormLabel>
+              <Input
+                name='supplierId'
+                placeholder='Supplier ID'
+                value={formData.supplierId}
+                onChange={handleInputChange}
+              />
+            </FormControl>
           </ModalBody>
+
           <ModalFooter>
-            <Button onClick={handleCloseDialog} variant='ghost' mr={3}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} colorScheme='blue'>
+            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button colorScheme='blue' ml={3} onClick={handleSubmit}>
               {selectedProduct ? 'Update' : 'Add'}
             </Button>
           </ModalFooter>
@@ -415,4 +423,4 @@ const Products = () => {
   );
 };
 
-export default Products; 
+export default Products;

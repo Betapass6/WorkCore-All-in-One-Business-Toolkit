@@ -12,6 +12,7 @@ const prisma = new PrismaClient();
 // Create a new product (Admin or Staff only)
 router.post(
   '/',
+  authenticate,
   requireRole(Role.ADMIN), // Or requireRole(Role.STAFF) based on detailed requirement
   [
     body('name').notEmpty().withMessage('Name is required'),
@@ -38,10 +39,14 @@ router.post(
           category,
           supplier: {
             connect: { id: supplierId }
+          },
+          user: {
+            connect: { id: (req as any).user.userId }
           }
         },
         include: {
-          supplier: true
+          supplier: true,
+          user: true
         }
       });
       res.status(201).json(product);
@@ -57,6 +62,7 @@ router.get('/', async (req: Request, res: Response) => {
   console.log('product.routes.ts: GET / route hit');
   try {
     const { search, skip, take } = req.query;
+
     const products = await prisma.product.findMany({
       where: {
         OR: [
@@ -69,7 +75,18 @@ router.get('/', async (req: Request, res: Response) => {
       skip: skip ? parseInt(skip as string) : undefined,
       take: take ? parseInt(take as string) : undefined,
     });
-    res.json(products);
+
+    const total = await prisma.product.count({
+      where: {
+        OR: [
+          { name: { contains: search as string, mode: 'insensitive' } },
+          { description: { contains: search as string, mode: 'insensitive' } },
+          { category: { contains: search as string, mode: 'insensitive' } },
+        ],
+      },
+    });
+
+    res.json({ products, total, skip: skip ? parseInt(skip as string) : 0, take: take ? parseInt(take as string) : products.length });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error fetching products' });

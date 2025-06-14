@@ -36,6 +36,7 @@ model User {
   bookings  Booking[]
   feedbacks Feedback[]
   files     File[]
+  products  Product[]
 }
 
 model Product {
@@ -51,6 +52,8 @@ model Product {
   // Relations
   supplierId  String
   supplier    Supplier  @relation(fields: [supplierId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
   feedbacks   Feedback[]
 }
 

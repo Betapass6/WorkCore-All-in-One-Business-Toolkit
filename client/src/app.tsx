@@ -16,7 +16,8 @@ import Services from './pages/Services';
 import Bookings from './pages/Bookings';
 import Feedback from './pages/Feedback';
 import Files from './pages/Files';
-import AdminPanel from './pages/AdminPanel';
+import AdminDashboard from './pages/AdminDashboard';
+import UserManagement from './pages/UserManagement';
 
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
@@ -70,7 +71,11 @@ function App() {
               />
               <Route
                 path="/admin"
-                element={<ProtectedRoute requiredRoles={['ADMIN']}><AdminPanel /></ProtectedRoute>}
+                element={<ProtectedRoute requiredRoles={['ADMIN']}><AdminDashboard /></ProtectedRoute>}
+              />
+              <Route
+                path="/admin/users"
+                element={<ProtectedRoute requiredRoles={['ADMIN']}><UserManagement /></ProtectedRoute>}
               />
             </Route>
 

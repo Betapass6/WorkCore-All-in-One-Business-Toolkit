@@ -35,6 +35,7 @@ async function main() {
     data: {
       name: 'Sample Supplier 1',
       contact: 'supplier1@example.com',
+      address: '123 Sample Street, Sample City, 12345',
     },
   });
 
@@ -47,6 +48,7 @@ async function main() {
       stock: 100,
       category: 'Electronics',
       supplierId: dummySupplier.id,
+      userId: admin.id,
     },
   });
 
@@ -58,6 +60,7 @@ async function main() {
       stock: 50,
       category: 'Books',
       supplierId: dummySupplier.id,
+      userId: admin.id,
     },
   });
 
@@ -69,6 +72,7 @@ async function main() {
       stock: 200,
       category: 'Books',
       supplierId: dummySupplier.id,
+      userId: admin.id,
     },
   });
 

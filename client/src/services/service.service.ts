@@ -1,7 +1,7 @@
 import api from './api';
 import { Service } from '../types'; // Import the Service interface from the types directory
 
-const API_BASE = '/api/services'; // Base path for service API
+const API_BASE = '/services'; // Base path for service API
 
 // Define types that exactly match what ServiceForm sends
 export type CreateServiceData = Omit<Service, 'id' | 'createdAt' | 'updatedAt'>;

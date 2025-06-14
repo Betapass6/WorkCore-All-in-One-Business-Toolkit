@@ -37,7 +37,7 @@ import { useAuth } from '../contexts/AuthContext'
 export default function Services() {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const [search, setSearch] = useState('')
-  const { data: services, loading } = useFetch<Service[]>({ url: `/api/services` })
+  const { data: services, loading } = useFetch<Service[]>({ url: `/services` })
   const [editService, setEditService] = useState<Service | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)

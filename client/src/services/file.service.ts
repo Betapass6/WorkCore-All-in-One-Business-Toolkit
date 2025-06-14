@@ -7,6 +7,8 @@ export interface File {
   expiredAt: string
   downloadCount: number
   userId: string
+  createdAt: string;
+  updatedAt: string;
   user: {
     id: string
     name: string

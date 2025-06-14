@@ -36,13 +36,13 @@ export interface Feedback {
 export interface ProductFilters {
   search?: string;
   category?: string;
-  page?: number;
-  limit?: number;
+  skip?: number;
+  take?: number;
 }
 
 export interface ProductResponse {
   products: Product[];
   total: number;
-  page: number;
-  limit: number;
+  skip: number;
+  take: number;
 } 

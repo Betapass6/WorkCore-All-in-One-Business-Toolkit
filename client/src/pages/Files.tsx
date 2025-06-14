@@ -1,36 +1,28 @@
 import { Box, VStack, Heading, Button, HStack, Spinner, useToast, SimpleGrid, Card, CardBody, Text } from '@chakra-ui/react'
-import { useFetch } from '../hooks/useFetch'
 import { FileUploader } from '../components/FileUploader'
-import { File } from '../types'
-import fileService from '../services/file.service'
+import fileService, { File } from '../services/file.service'
 import dashboardService from '../services/dashboard.service'
 import { DashboardStats } from '../types/dashboard'
 import { useAuth } from '../contexts/AuthContext'
 import { useEffect, useState } from 'react'
-
-interface FileItem {
-  id: string
-  fileName: string
-  fileType: string
-  fileSize: number
-  uploadDate: string
-  url: string
-}
+import { useFetch } from '../hooks/useFetch'
 
 export default function Files() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isViewModalOpen, setIsViewModalOpen] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<FileItem | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [deleteFileId, setDeleteFileId] = useState<string | null>(null)
   const { user } = useAuth()
 
-  const { data: files, loading } = useFetch<FileItem[]>({ url: `/api/files` })
+  const { data: filesData, loading: loadingFiles } = useFetch<{ files: File[], pagination: any }>("/api/files");
+  const files = filesData?.files || [];
+
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loadingStats, setLoadingStats] = useState(true)
   const toast = useToast()
 
   useEffect(() => {
-    console.log('Files data:', files); // Debug log
+    console.log('Files data (after useFetch and data extraction):', files);
   }, [files]);
 
   useEffect(() => {
@@ -72,8 +64,6 @@ export default function Files() {
         status: 'success',
         duration: 3000,
       })
-      // Refresh the data
-      window.location.reload()
     } catch (error) {
       toast({
         title: 'Error',
@@ -84,7 +74,7 @@ export default function Files() {
     }
   }
 
-  if (loading) return <Spinner />
+  if (loadingFiles || loadingStats) return <Spinner />
 
   return (
     <Box p={4}>
@@ -104,7 +94,7 @@ export default function Files() {
                 <Text fontSize="sm" color="gray.600" mb={1}>
                   My Files
                 </Text>
-                <Text fontSize="2xl" fontWeight="bold">{stats.myFiles || 0}</Text>
+                <Text fontSize="2xl" fontWeight="bold">{files.length || 0}</Text>
               </CardBody>
             </Card>
             <Card>
@@ -134,13 +124,13 @@ export default function Files() {
             <Box key={file.id} p={4} borderWidth={1} borderRadius="md" mb={4}>
               <Heading size="sm">{file.fileName}</Heading>
               <Box mt={2} fontSize="sm" color="gray.500">
-                Uploaded: {new Date(file.uploadDate).toLocaleDateString()}
+                Uploaded: {new Date(file.createdAt).toLocaleDateString()}
               </Box>
               <Box mt={2} fontSize="sm" color="gray.500">
-                Expires: {new Date(file.url).toLocaleDateString()}
+                Expires: {new Date(file.expiredAt).toLocaleDateString()}
               </Box>
               <HStack mt={4}>
-                <Button size="sm" colorScheme="blue" onClick={() => handleDownload(file.id)}>
+                <Button size="sm" colorScheme="blue" onClick={() => handleDownload(file.uuid)}>
                   Download
                 </Button>
                 <Button size="sm" colorScheme="red" onClick={() => handleDelete(file.id)}>

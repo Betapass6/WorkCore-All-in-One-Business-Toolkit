@@ -28,7 +28,7 @@ export function BookingPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const { user } = useAuth()
-  const { data: bookings, loading } = useFetch<Booking[]>({ url: `/api/bookings/${id}` })
+  const { data: bookings, loading } = useFetch<Booking[]>({ url: `/bookings/${id}` })
   const [loadingForm, setLoadingForm] = useState(false)
   const [formData, setFormData] = useState({
     serviceId: '',
